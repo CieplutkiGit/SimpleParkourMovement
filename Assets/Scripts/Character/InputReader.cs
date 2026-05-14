@@ -17,15 +17,15 @@ public class InputReader : ScriptableObject
     private void OnEnable()
     {
         _actions = new PlayerInputActions();
-        _actions.Player.Enable();
 
         _actions.Player.Jump.performed += OnJump;
         _actions.Player.Jump.canceled += OnJumpCancel;
 
         _actions.Player.Move.performed += OnMove;
-        _actions.Player.Look.performed += OnLook;
         _actions.Player.Move.canceled += OnMove;
+        _actions.Player.Look.performed += OnLook;
         _actions.Player.Look.canceled += OnLook;
+        _actions.Player.Enable();
     }
 
     private void OnDisable()
@@ -34,8 +34,8 @@ public class InputReader : ScriptableObject
         _actions.Player.Jump.performed -= OnJump;
         _actions.Player.Jump.canceled -= OnJumpCancel;
         _actions.Player.Move.performed -= OnMove;
-        _actions.Player.Look.performed -= OnLook;
         _actions.Player.Move.canceled -= OnMove;
+        _actions.Player.Look.performed -= OnLook;
         _actions.Player.Look.canceled -= OnLook;
         _actions.Player.Disable();
     }
