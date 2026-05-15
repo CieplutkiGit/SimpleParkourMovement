@@ -24,6 +24,12 @@ public class AirborneState : IState
         if (_controller.GroundDetector.IsGrounded && _controller.RB.linearVelocity.y <= 0f)
         {
             _controller.StateMachine.ChangeState(_controller.GroundedState);
+            return;
+        }
+
+        if (_controller.RB.linearVelocity.y < 0f && !_controller.Jump.CanCoyoteJump)
+        {
+            _controller.StateMachine.ChangeState(_controller.FallingState);
         }
     }
 

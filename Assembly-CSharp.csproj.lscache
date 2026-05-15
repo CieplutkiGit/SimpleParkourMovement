@@ -72,6 +72,7 @@ Assets/
    States/
     AirborneState.cs
     ClimbUpState.cs
+    FallingState.cs
     GroundedState.cs
     IState.cs
     LedgeGrabState.cs

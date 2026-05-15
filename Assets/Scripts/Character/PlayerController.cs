@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour
     public StateMachine StateMachine { get; private set; }
     public GroundedState GroundedState { get; private set; }
     public AirborneState AirborneState { get; private set; }
+    public FallingState FallingState { get; private set; }
     public LedgeGrabState LedgeGrabState { get; private set; }
     public ClimbUpState ClimbUpState { get; private set; }
 
@@ -42,6 +43,7 @@ public class PlayerController : MonoBehaviour
         StateMachine = new StateMachine();
         GroundedState = new GroundedState(this);
         AirborneState = new AirborneState(this);
+        FallingState = new FallingState(this);
         LedgeGrabState = new LedgeGrabState(this);
         ClimbUpState = new ClimbUpState(this);
     }

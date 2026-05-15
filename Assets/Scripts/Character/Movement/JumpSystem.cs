@@ -20,6 +20,8 @@ public class JumpSystem : MonoBehaviour
     private float _lastJumpPressedTime = -100f;
     private float _lastJumpTime = -100f;
 
+    public bool CanCoyoteJump => Time.time - _lastGroundedTime <= _coyoteTime;
+
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
@@ -103,7 +105,7 @@ public class JumpSystem : MonoBehaviour
         }
     }
 
-    private void ApplyFallGravity()
+    public void ApplyFallGravity()
     {
         if (!_groundDetector.IsGrounded && _rb.linearVelocity.y < 0f)
         {

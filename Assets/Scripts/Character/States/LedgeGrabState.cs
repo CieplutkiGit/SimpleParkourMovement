@@ -53,7 +53,7 @@ public class LedgeGrabState : IState
         if (forwardInput < -0.5f)
         {
             _controller.LedgeDetector.PauseDetection(_controller.LedgeGrab.JumpCooldownDuration);
-            _controller.StateMachine.ChangeState(_controller.AirborneState);
+            _controller.StateMachine.ChangeState(_controller.FallingState);
             return;
         }
 
