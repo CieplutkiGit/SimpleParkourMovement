@@ -1,12 +1,18 @@
 using UnityEngine;
 
-[RequireComponent(typeof(MovementSystem), typeof(JumpSystem), typeof(IGroundDetector))]
-[RequireComponent(typeof(WallDetector), typeof(LedgeDetector))]
+[RequireComponent(typeof(MovementSystem), typeof(JumpSystem), typeof(LedgeGrabSystem))]
+[RequireComponent(typeof(GroundDetector), typeof(WallDetector), typeof(LedgeDetector))]
 public class PlayerController : MonoBehaviour
 {
+    [SerializeField] private InputReader _inputReader;
+
     public Rigidbody RB { get; private set; }
+    public IInputProvider InputProvider { get; private set; }
+    
     public MovementSystem Movement { get; private set; }
     public JumpSystem Jump { get; private set; }
+    public LedgeGrabSystem LedgeGrab { get; private set; }
+    
     public IGroundDetector GroundDetector { get; private set; }
     public IWallDetector WallDetector { get; private set; }
     public ILedgeDetector LedgeDetector { get; private set; }
@@ -14,12 +20,21 @@ public class PlayerController : MonoBehaviour
     public StateMachine StateMachine { get; private set; }
     public GroundedState GroundedState { get; private set; }
     public AirborneState AirborneState { get; private set; }
+    public LedgeGrabState LedgeGrabState { get; private set; }
+    public ClimbUpState ClimbUpState { get; private set; }
 
     private void Awake()
     {
+        if (_inputReader == null)
+            Debug.LogError("FATAL: InputReader is not assigned in PlayerController Inspector!");
+
         RB = GetComponent<Rigidbody>();
+        InputProvider = _inputReader;
+
         Movement = GetComponent<MovementSystem>();
         Jump = GetComponent<JumpSystem>();
+        LedgeGrab = GetComponent<LedgeGrabSystem>();
+        
         GroundDetector = GetComponent<IGroundDetector>();
         WallDetector = GetComponent<WallDetector>();
         LedgeDetector = GetComponent<LedgeDetector>();
@@ -27,6 +42,8 @@ public class PlayerController : MonoBehaviour
         StateMachine = new StateMachine();
         GroundedState = new GroundedState(this);
         AirborneState = new AirborneState(this);
+        LedgeGrabState = new LedgeGrabState(this);
+        ClimbUpState = new ClimbUpState(this);
     }
 
     private void Start()

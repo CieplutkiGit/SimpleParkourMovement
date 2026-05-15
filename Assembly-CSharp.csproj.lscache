@@ -67,11 +67,14 @@ Assets/
    JumpSystem.cs
    MovementSystem.cs
   Character/
+   Parkour/LedgeGrabSystem.cs
    PlayerController.cs
    States/
     AirborneState.cs
+    ClimbUpState.cs
     GroundedState.cs
     IState.cs
+    LedgeGrabState.cs
     StateMachine.cs
   Core/
    CursorService.cs

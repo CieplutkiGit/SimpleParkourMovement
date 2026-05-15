@@ -5,6 +5,7 @@ public class JumpSystem : MonoBehaviour
 {
     [SerializeField] private InputReader _inputReader;
     [SerializeField] private float _jumpForce = 6f;
+    [SerializeField] private float _ledgeJumpPushForce = 3f;
     [SerializeField] private float _jumpCutoffMultiplier = 0.4f;
     [SerializeField] private float _fallGravityMultiplier = 2.5f;
     [SerializeField] private float _coyoteTime = 0.15f;
@@ -50,13 +51,41 @@ public class JumpSystem : MonoBehaviour
     {
         ApplyFallGravity();
 
-        if (CanJump())
+        bool isCoyoteTimeValid = Time.time - _lastGroundedTime <= _coyoteTime;
+
+        if (isCoyoteTimeValid && CheckAndConsumeJumpInput())
         {
-            PerformJump();
+            _lastGroundedTime = -100f; 
+            
+            Vector3 velocity = _rb.linearVelocity;
+            velocity.y = _jumpForce;
+            _rb.linearVelocity = velocity;
+            
             return true;
         }
 
         return false;
+    }
+
+    public bool CheckAndConsumeJumpInput()
+    {
+        bool isJumpBuffered = Time.time - _lastJumpPressedTime <= _jumpBufferTime;
+        bool isCooldownFinished = Time.time - _lastJumpTime >= _jumpCooldown;
+
+        if (isJumpBuffered && isCooldownFinished)
+        {
+            _lastJumpTime = Time.time;
+            _lastJumpPressedTime = -100f;
+            return true;
+        }
+
+        return false;
+    }
+
+    public void PerformLedgeJump(Vector3 ledgeNormal)
+    {
+        Vector3 velocity = (Vector3.up * _jumpForce) + (ledgeNormal * _ledgeJumpPushForce);
+        _rb.linearVelocity = velocity;
     }
 
     private void HandleJumpStarted()
@@ -80,25 +109,5 @@ public class JumpSystem : MonoBehaviour
         {
             _rb.AddForce(Physics.gravity * (_fallGravityMultiplier - 1f), ForceMode.Acceleration);
         }
-    }
-
-    private bool CanJump()
-    {
-        bool isJumpBuffered = Time.time - _lastJumpPressedTime <= _jumpBufferTime;
-        bool isCoyoteTimeValid = Time.time - _lastGroundedTime <= _coyoteTime;
-        bool isCooldownFinished = Time.time - _lastJumpTime >= _jumpCooldown;
-
-        return isJumpBuffered && isCoyoteTimeValid && isCooldownFinished;
-    }
-
-    private void PerformJump()
-    {
-        _lastJumpTime = Time.time;
-        _lastJumpPressedTime = -100f;
-        _lastGroundedTime = -100f;
-
-        Vector3 velocity = _rb.linearVelocity;
-        velocity.y = _jumpForce;
-        _rb.linearVelocity = velocity;
     }
 }

@@ -12,8 +12,16 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
     public Vector3 LedgePoint { get; private set; }
     public Vector3 LedgeNormal { get; private set; }
 
+    private float _pauseEndTime;
+
     private void FixedUpdate()
     {
+        if (Time.time < _pauseEndTime)
+        {
+            ResetDetection();
+            return;
+        }
+
         Vector3 chestOrigin = transform.position + Vector3.up * _chestHeight;
         
         bool wallHit = Physics.Raycast(chestOrigin, transform.forward, out RaycastHit forwardHit, _forwardDistance, _wallLayer);
@@ -33,6 +41,17 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
             }
         }
 
+        ResetDetection();
+    }
+
+    public void PauseDetection(float duration)
+    {
+        _pauseEndTime = Time.time + duration;
+        ResetDetection();
+    }
+
+    private void ResetDetection()
+    {
         LedgeFound = false;
         LedgePoint = Vector3.zero;
         LedgeNormal = Vector3.zero;

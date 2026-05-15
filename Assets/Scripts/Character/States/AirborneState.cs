@@ -15,6 +15,12 @@ public class AirborneState : IState
     {
         _controller.Jump.UpdateTimers();
 
+        if (_controller.LedgeDetector.LedgeFound && _controller.RB.linearVelocity.y < 0f)
+        {
+            _controller.StateMachine.ChangeState(_controller.LedgeGrabState);
+            return;
+        }
+
         if (_controller.GroundDetector.IsGrounded && _controller.RB.linearVelocity.y <= 0f)
         {
             _controller.StateMachine.ChangeState(_controller.GroundedState);
