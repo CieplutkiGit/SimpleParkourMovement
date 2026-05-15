@@ -27,6 +27,14 @@ public class AirborneState : IState
             return;
         }
 
+        float forwardInput = _controller.InputProvider != null ? _controller.InputProvider.MoveInput.y : 0f;
+
+        if (forwardInput > 0.1f && (_controller.WallDetector.IsWallLeft || _controller.WallDetector.IsWallRight))
+        {
+            _controller.StateMachine.ChangeState(_controller.WallRunState);
+            return;
+        }
+
         if (_controller.RB.linearVelocity.y < 0f && !_controller.Jump.CanCoyoteJump)
         {
             _controller.StateMachine.ChangeState(_controller.FallingState);
