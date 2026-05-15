@@ -6,6 +6,7 @@ public class JumpSystem : MonoBehaviour
     [SerializeField] private InputReader _inputReader;
     [SerializeField] private float _jumpForce = 6f;
     [SerializeField] private float _ledgeJumpPushForce = 3f;
+    [SerializeField] private float _wallJumpPushForce = 5f;
     [SerializeField] private float _jumpCutoffMultiplier = 0.4f;
     [SerializeField] private float _fallGravityMultiplier = 2.5f;
     [SerializeField] private float _coyoteTime = 0.15f;
@@ -87,6 +88,12 @@ public class JumpSystem : MonoBehaviour
     public void PerformLedgeJump(Vector3 ledgeNormal)
     {
         Vector3 velocity = (Vector3.up * _jumpForce) + (ledgeNormal * _ledgeJumpPushForce);
+        _rb.linearVelocity = velocity;
+    }
+
+    public void PerformWallJump(Vector3 wallNormal)
+    {
+        Vector3 velocity = (Vector3.up * _jumpForce) + (wallNormal * _wallJumpPushForce);
         _rb.linearVelocity = velocity;
     }
 

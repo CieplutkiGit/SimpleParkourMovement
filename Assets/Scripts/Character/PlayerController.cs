@@ -2,6 +2,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(MovementSystem), typeof(JumpSystem), typeof(LedgeGrabSystem))]
 [RequireComponent(typeof(GroundDetector), typeof(WallDetector), typeof(LedgeDetector))]
+[RequireComponent(typeof(WallRunSystem))]
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private InputReader _inputReader;
@@ -12,6 +13,7 @@ public class PlayerController : MonoBehaviour
     public MovementSystem Movement { get; private set; }
     public JumpSystem Jump { get; private set; }
     public LedgeGrabSystem LedgeGrab { get; private set; }
+    public WallRunSystem WallRun { get; private set; }
     
     public IGroundDetector GroundDetector { get; private set; }
     public IWallDetector WallDetector { get; private set; }
@@ -35,6 +37,7 @@ public class PlayerController : MonoBehaviour
         Movement = GetComponent<MovementSystem>();
         Jump = GetComponent<JumpSystem>();
         LedgeGrab = GetComponent<LedgeGrabSystem>();
+        WallRun = GetComponent<WallRunSystem>();
         
         GroundDetector = GetComponent<IGroundDetector>();
         WallDetector = GetComponent<WallDetector>();
