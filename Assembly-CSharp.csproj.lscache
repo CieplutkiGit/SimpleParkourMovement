@@ -80,6 +80,7 @@ Assets/
     LedgeGrabState.cs
     StateMachine.cs
     WallRunState.cs
+    WallRunUpState.cs
   Core/
    CursorService.cs
    GameBootstrap.cs

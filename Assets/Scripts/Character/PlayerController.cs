@@ -24,6 +24,7 @@ public class PlayerController : MonoBehaviour
     public AirborneState AirborneState { get; private set; }
     public FallingState FallingState { get; private set; }
     public WallRunState WallRunState { get; private set; }
+    public WallRunUpState WallRunUpState { get; private set; }
     public LedgeGrabState LedgeGrabState { get; private set; }
     public ClimbUpState ClimbUpState { get; private set; }
 
@@ -49,6 +50,7 @@ public class PlayerController : MonoBehaviour
         AirborneState = new AirborneState(this);
         FallingState = new FallingState(this);
         WallRunState = new WallRunState(this);
+        WallRunUpState = new WallRunUpState(this);
         LedgeGrabState = new LedgeGrabState(this);
         ClimbUpState = new ClimbUpState(this);
     }
