@@ -31,22 +31,21 @@ public class ClimbUpState : IState
 
     public void Tick()
     {
-        _timer += Time.deltaTime;
+    }
+
+    public void FixedTick()
+    {
+        _timer += Time.fixedDeltaTime;
         float percent = _timer / _controller.LedgeGrab.ClimbUpDuration;
 
         Vector3 currentPos = Vector3.Lerp(_startPos, _endPos, percent);
-        
         currentPos.y += Mathf.Sin(percent * Mathf.PI) * 0.5f;
 
-        _controller.transform.position = currentPos;
+        _controller.RB.MovePosition(currentPos);
 
         if (percent >= 1f)
         {
             _controller.StateMachine.ChangeState(_controller.GroundedState);
         }
-    }
-
-    public void FixedTick()
-    {
     }
 }
