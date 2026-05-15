@@ -66,8 +66,10 @@ Assets/
   Character/Movement/
    JumpSystem.cs
    MovementSystem.cs
+  Character/Parkour/
+   LedgeGrabSystem.cs
+   WallRunSystem.cs
   Character/
-   Parkour/LedgeGrabSystem.cs
    PlayerController.cs
    States/
     AirborneState.cs
