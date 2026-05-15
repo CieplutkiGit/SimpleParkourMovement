@@ -54,14 +54,19 @@ Assets/
  Input/PlayerInputActions.cs
  Scripts/
   Camera/CameraController.cs
+  Character/Detection/
+   GroundDetector.cs
+   LedgeDetector.cs
+   WallDetector.cs
+  Character/Interfaces/
+   IGroundDetector.cs
+   IInputProvider.cs
+   ILedgeDetector.cs
+   IWallDetector.cs
+  Character/Movement/
+   JumpSystem.cs
+   MovementSystem.cs
   Character/
-   Detection/GroundDetector.cs
-   Interfaces/
-    IGroundDetector.cs
-    IInputProvider.cs
-   Movement/
-    JumpSystem.cs
-    MovementSystem.cs
    PlayerController.cs
    States/
     AirborneState.cs
