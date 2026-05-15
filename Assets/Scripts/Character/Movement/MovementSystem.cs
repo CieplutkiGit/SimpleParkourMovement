@@ -49,21 +49,27 @@ public class MovementSystem : MonoBehaviour
     }
 
     private void ApplyMovement(Vector3 movementDirection)
-    {
-        if (_groundDetector.IsGrounded)
         {
-            Vector3 projected = Vector3.ProjectOnPlane(movementDirection, _groundDetector.GroundNormal);
-            _rb.linearVelocity = projected * _moveSpeed;
-            SnapToGround();
-        }
-        else
-        {
-            Vector3 velocity = movementDirection * _moveSpeed;
-            velocity.y = _rb.linearVelocity.y;
-            _rb.linearVelocity = velocity;
-        }
-    }
+            if (_groundDetector.IsGrounded)
+            {
+                Vector3 projected = Vector3.ProjectOnPlane(movementDirection, _groundDetector.GroundNormal);
+                Vector3 newVelocity = projected * _moveSpeed;
+                
+                if (_rb.linearVelocity.y > 0f)
+                {
+                    newVelocity.y = _rb.linearVelocity.y;
+                }
 
+                _rb.linearVelocity = newVelocity;
+                SnapToGround();
+            }
+            else
+            {
+                Vector3 velocity = movementDirection * _moveSpeed;
+                velocity.y = _rb.linearVelocity.y;
+                _rb.linearVelocity = velocity;
+            }
+        }
    private void SnapToGround()
     {
         if (_rb.linearVelocity.y > 0.1f) return;

@@ -59,12 +59,14 @@ Assets/
    Interfaces/
     IGroundDetector.cs
     IInputProvider.cs
-   Movement/MovementSystem.cs
+   Movement/
+    JumpSystem.cs
+    MovementSystem.cs
    PlayerController.cs
   Core/
    CursorService.cs
    GameBootstrap.cs
-   GameStat.cs
+   GameState.cs
    GameStateSO.cs
   Input/InputReader.cs
 Temp/obj/Assembly-CSharp/.NETStandard,Version=v2.1.AssemblyAttributes.cs
