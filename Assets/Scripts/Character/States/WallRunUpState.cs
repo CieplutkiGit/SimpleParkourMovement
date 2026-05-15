@@ -51,6 +51,7 @@ public class WallRunUpState : IState
 
         if (_timer >= _controller.WallRun.WallRunUpDuration)
         {
+            _controller.WallRun.ConsumeWallRun();
             _controller.StateMachine.ChangeState(_controller.FallingState);
         }
     }

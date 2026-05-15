@@ -11,12 +11,14 @@ public class MovementSystem : MonoBehaviour
 
     private Rigidbody _rb;
     private IGroundDetector _groundDetector;
+    private IWallDetector _wallDetector;
     private IInputProvider _input;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _groundDetector = GetComponent<IGroundDetector>();
+        _wallDetector = GetComponent<IWallDetector>();
         _input = _inputReader;
     }
 
@@ -38,11 +40,17 @@ public class MovementSystem : MonoBehaviour
         _rb.useGravity = true;
 
         Vector3 movementDirection = GetMovementDirection();
+
+        if (_wallDetector.IsWallFront && Vector3.Dot(movementDirection, _wallDetector.FrontWallNormal) < 0f)
+        {
+            movementDirection = Vector3.ProjectOnPlane(movementDirection, _wallDetector.FrontWallNormal);
+        }
+
         Vector3 velocity = movementDirection * _moveSpeed;
-        velocity.y = _rb.linearVelocity.y; 
-        
+        velocity.y = _rb.linearVelocity.y;
+
         _rb.linearVelocity = velocity;
-        
+
         RotateCharacter(movementDirection);
     }
 

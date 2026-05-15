@@ -45,6 +45,7 @@ public class WallRunState : IState
 
         if (_timer >= _controller.WallRun.WallRunDuration)
         {
+            _controller.WallRun.ConsumeWallRun();
             _controller.StateMachine.ChangeState(_controller.FallingState);
         }
     }
@@ -52,6 +53,7 @@ public class WallRunState : IState
     public void FixedTick()
     {
         _timer += Time.fixedDeltaTime;
-        _controller.WallRun.ApplyWallRun(_controller.WallDetector.WallNormal);
+        float t = _timer / _controller.WallRun.WallRunDuration;
+        _controller.WallRun.ApplyWallRun(_controller.WallDetector.WallNormal, t);
     }
 }

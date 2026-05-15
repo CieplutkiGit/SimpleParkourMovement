@@ -7,7 +7,10 @@ public class GroundedState : IState
         _controller = controller;
     }
 
-    public void Enter() { }
+    public void Enter()
+    {
+        _controller.WallRun.ResetWallRun();
+    }
 
     public void Exit() { }
 

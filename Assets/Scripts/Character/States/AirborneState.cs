@@ -29,13 +29,13 @@ public class AirborneState : IState
 
         float forwardInput = _controller.InputProvider != null ? _controller.InputProvider.MoveInput.y : 0f;
 
-        if (forwardInput > 0.1f && _controller.WallDetector.IsWallFront)
+        if (forwardInput > 0.1f && _controller.WallRun.WallRunAvailable && _controller.WallDetector.IsWallFront)
         {
             _controller.StateMachine.ChangeState(_controller.WallRunUpState);
             return;
         }
 
-        if (forwardInput > 0.1f && (_controller.WallDetector.IsWallLeft || _controller.WallDetector.IsWallRight))
+        if (forwardInput > 0.1f && _controller.WallRun.WallRunAvailable && (_controller.WallDetector.IsWallLeft || _controller.WallDetector.IsWallRight))
         {
             _controller.StateMachine.ChangeState(_controller.WallRunState);
             return;
