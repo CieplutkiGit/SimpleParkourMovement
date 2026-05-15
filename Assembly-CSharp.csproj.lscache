@@ -55,6 +55,10 @@ Assets/
  Scripts/
   Camera/CameraController.cs
   Character/
+   Detection/GroundDetector.cs
+   Interfaces/
+    IGroundDetector.cs
+    IInputProvider.cs
    Movement/MovementSystem.cs
    PlayerController.cs
   Core/

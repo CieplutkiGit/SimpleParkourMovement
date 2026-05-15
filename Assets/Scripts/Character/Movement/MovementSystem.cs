@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class MovementSystem : MonoBehaviour
 {
     [SerializeField] private InputReader _inputReader;
@@ -8,10 +9,20 @@ public class MovementSystem : MonoBehaviour
     [SerializeField] private float _rotationSpeed = 10f;
 
     private Rigidbody _rb;
+    private IGroundDetector _groundDetector;
+    private IInputProvider _input;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
+        _groundDetector = GetComponent<IGroundDetector>();
+        _input = _inputReader;
+
+        if (_groundDetector == null)
+            Debug.LogError("No IGroundDetector component found on this GameObject!");
+
+        if (_input == null)
+            Debug.LogError("Input Reader is not assigned or does not implement IInputProvider!");
     }
 
     private void FixedUpdate()
@@ -32,14 +43,22 @@ public class MovementSystem : MonoBehaviour
         forward.Normalize();
         right.Normalize();
 
-        return forward * _inputReader.MoveInput.y + right * _inputReader.MoveInput.x;
+        return forward * _input.MoveInput.y + right * _input.MoveInput.x;
     }
 
     private void ApplyMovement(Vector3 movementDirection)
     {
-        Vector3 velocity = movementDirection * _moveSpeed;
-        velocity.y = _rb.linearVelocity.y;
-        _rb.linearVelocity = velocity;
+        if (_groundDetector.IsGrounded)
+        {
+            Vector3 projected = Vector3.ProjectOnPlane(movementDirection, _groundDetector.GroundNormal);
+            _rb.linearVelocity = projected * _moveSpeed;
+        }
+        else
+        {
+            Vector3 velocity = movementDirection * _moveSpeed;
+            velocity.y = _rb.linearVelocity.y;
+            _rb.linearVelocity = velocity;
+        }
     }
 
     private void RotateCharacter(Vector3 movementDirection)

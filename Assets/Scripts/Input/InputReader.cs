@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 [CreateAssetMenu(menuName = "Character/InputReader")]
-public class InputReader : ScriptableObject
+public class InputReader : ScriptableObject, IInputProvider
 {
     public event Action OnJumpStarted;
     public event Action OnJumpCancelled;
