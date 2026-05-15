@@ -7,7 +7,7 @@ public class MovementSystem : MonoBehaviour
     [SerializeField] private Transform _cameraTransform;
     [SerializeField] private float _moveSpeed = 5f;
     [SerializeField] private float _rotationSpeed = 10f;
-
+    [SerializeField] private float _groundSnapOffset = 0.5f;
     private Rigidbody _rb;
     private IGroundDetector _groundDetector;
     private IInputProvider _input;
@@ -27,6 +27,8 @@ public class MovementSystem : MonoBehaviour
 
     private void FixedUpdate()
     {
+        _rb.useGravity = !_groundDetector.IsGrounded;
+
         Vector3 movementDirection = GetMovementDirection();
         ApplyMovement(movementDirection);
         RotateCharacter(movementDirection);
@@ -52,12 +54,27 @@ public class MovementSystem : MonoBehaviour
         {
             Vector3 projected = Vector3.ProjectOnPlane(movementDirection, _groundDetector.GroundNormal);
             _rb.linearVelocity = projected * _moveSpeed;
+            SnapToGround();
         }
         else
         {
             Vector3 velocity = movementDirection * _moveSpeed;
             velocity.y = _rb.linearVelocity.y;
             _rb.linearVelocity = velocity;
+        }
+    }
+
+   private void SnapToGround()
+    {
+        if (_rb.linearVelocity.y > 0.1f) return;
+        if (_groundDetector.SlopeAngle > 5f) return;
+
+        Vector3 targetPosition = _rb.position;
+        targetPosition.y = _groundDetector.GroundPoint.y + _groundSnapOffset;
+
+        if (Mathf.Abs(_rb.position.y - targetPosition.y) > 0.01f)
+        {
+            _rb.MovePosition(targetPosition);
         }
     }
 

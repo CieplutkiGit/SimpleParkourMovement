@@ -19,6 +19,8 @@ public class GroundDetector : MonoBehaviour, IGroundDetector
     public Vector3 GroundNormal { get; private set; }
     public float SlopeAngle { get; private set; }
 
+    public Vector3 GroundPoint { get; private set; }
+
     private bool _wasGroundedLastFrame;
 
     private void FixedUpdate()
@@ -33,18 +35,13 @@ public class GroundDetector : MonoBehaviour, IGroundDetector
         Vector3 direction = Vector3.down;
         float distance = _originOffset + _checkDistance;
 
+        // Sphere cast for grounded detection (forgiving)
         bool hitGround = Physics.SphereCast(
-            origin,
-            _sphereRadius,
-            direction,
-            out RaycastHit hit,
-            distance,
-            _groundLayer
-        );
+            origin, _sphereRadius, direction, out RaycastHit sphereHit, distance, _groundLayer);
 
         if (hitGround)
         {
-            GroundNormal = hit.normal;
+            GroundNormal = sphereHit.normal;
             SlopeAngle = Vector3.Angle(Vector3.up, GroundNormal);
             IsGrounded = SlopeAngle <= _maxSlopeAngle;
         }
@@ -53,6 +50,16 @@ public class GroundDetector : MonoBehaviour, IGroundDetector
             IsGrounded = false;
             GroundNormal = Vector3.up;
             SlopeAngle = 0f;
+        }
+
+        // Raycast for precise ground point directly beneath the player
+        if (Physics.Raycast(origin, direction, out RaycastHit rayHit, distance + 1f, _groundLayer))
+        {
+            GroundPoint = rayHit.point;
+        }
+        else
+        {
+            GroundPoint = transform.position;
         }
     }
 
