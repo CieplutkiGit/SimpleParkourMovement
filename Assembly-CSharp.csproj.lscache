@@ -58,6 +58,8 @@ Assets/
    Movement/MovementSystem.cs
    PlayerController.cs
   Core/
+   CursorService.cs
+   GameBootstrap.cs
    GameStat.cs
    GameStateSO.cs
   Input/InputReader.cs
