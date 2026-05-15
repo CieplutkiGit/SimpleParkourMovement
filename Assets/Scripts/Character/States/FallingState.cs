@@ -25,18 +25,8 @@ public class FallingState : IState
             return;
         }
 
-        float forwardInput = _controller.InputProvider != null ? _controller.InputProvider.MoveInput.y : 0f;
-
-        if (forwardInput > 0.1f && _controller.WallRun.WallRunAvailable && _controller.WallDetector.IsWallFront)
-        {
-            _controller.StateMachine.ChangeState(_controller.WallRunUpState);
+        if (WallRunEntry.TryEnter(_controller))
             return;
-        }
-
-        if (forwardInput > 0.1f && _controller.WallRun.WallRunAvailable && (_controller.WallDetector.IsWallLeft || _controller.WallDetector.IsWallRight))
-        {
-            _controller.StateMachine.ChangeState(_controller.WallRunState);
-        }
     }
 
     public void FixedTick()

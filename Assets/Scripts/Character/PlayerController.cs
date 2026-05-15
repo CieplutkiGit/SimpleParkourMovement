@@ -42,8 +42,8 @@ public class PlayerController : MonoBehaviour
         WallRun = GetComponent<WallRunSystem>();
         
         GroundDetector = GetComponent<IGroundDetector>();
-        WallDetector = GetComponent<WallDetector>();
-        LedgeDetector = GetComponent<LedgeDetector>();
+        WallDetector = GetComponent<IWallDetector>();
+        LedgeDetector = GetComponent<ILedgeDetector>();
 
         StateMachine = new StateMachine();
         GroundedState = new GroundedState(this);

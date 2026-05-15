@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 
 public class GroundDetector : MonoBehaviour, IGroundDetector
@@ -12,21 +11,15 @@ public class GroundDetector : MonoBehaviour, IGroundDetector
     [Header("Slope")]
     [SerializeField] private float _maxSlopeAngle = 50f;
 
-    public event Action OnLanded;
-    public event Action OnLeftGround;
-
     public bool IsGrounded { get; private set; }
     public Vector3 GroundNormal { get; private set; }
     public float SlopeAngle { get; private set; }
 
     public Vector3 GroundPoint { get; private set; }
 
-    private bool _wasGroundedLastFrame;
-
     private void FixedUpdate()
     {
         DetectGround();
-        FireEventsIfStateChanged();
     }
 
     private void DetectGround()
@@ -61,14 +54,6 @@ public class GroundDetector : MonoBehaviour, IGroundDetector
         {
             GroundPoint = transform.position;
         }
-    }
-
-    private void FireEventsIfStateChanged()
-    {
-        if (IsGrounded && !_wasGroundedLastFrame) OnLanded?.Invoke();
-        else if (!IsGrounded && _wasGroundedLastFrame) OnLeftGround?.Invoke();
-
-        _wasGroundedLastFrame = IsGrounded;
     }
 
     private void OnDrawGizmosSelected()
