@@ -63,6 +63,11 @@ Assets/
     JumpSystem.cs
     MovementSystem.cs
    PlayerController.cs
+   States/
+    AirborneState.cs
+    GroundedState.cs
+    IState.cs
+    StateMachine.cs
   Core/
    CursorService.cs
    GameBootstrap.cs

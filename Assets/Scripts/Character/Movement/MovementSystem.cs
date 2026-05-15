@@ -8,6 +8,7 @@ public class MovementSystem : MonoBehaviour
     [SerializeField] private float _moveSpeed = 5f;
     [SerializeField] private float _rotationSpeed = 10f;
     [SerializeField] private float _groundSnapOffset = 0.5f;
+
     private Rigidbody _rb;
     private IGroundDetector _groundDetector;
     private IInputProvider _input;
@@ -17,20 +18,31 @@ public class MovementSystem : MonoBehaviour
         _rb = GetComponent<Rigidbody>();
         _groundDetector = GetComponent<IGroundDetector>();
         _input = _inputReader;
-
-        if (_groundDetector == null)
-            Debug.LogError("No IGroundDetector component found on this GameObject!");
-
-        if (_input == null)
-            Debug.LogError("Input Reader is not assigned or does not implement IInputProvider!");
     }
 
-    private void FixedUpdate()
+    public void HandleGroundedMovement()
     {
-        _rb.useGravity = !_groundDetector.IsGrounded;
+        _rb.useGravity = false;
+        
+        Vector3 movementDirection = GetMovementDirection();
+        Vector3 projected = Vector3.ProjectOnPlane(movementDirection, _groundDetector.GroundNormal);
+        
+        _rb.linearVelocity = projected * _moveSpeed;
+        
+        SnapToGround();
+        RotateCharacter(movementDirection);
+    }
+
+    public void HandleAirborneMovement()
+    {
+        _rb.useGravity = true;
 
         Vector3 movementDirection = GetMovementDirection();
-        ApplyMovement(movementDirection);
+        Vector3 velocity = movementDirection * _moveSpeed;
+        velocity.y = _rb.linearVelocity.y; 
+        
+        _rb.linearVelocity = velocity;
+        
         RotateCharacter(movementDirection);
     }
 
@@ -48,29 +60,7 @@ public class MovementSystem : MonoBehaviour
         return forward * _input.MoveInput.y + right * _input.MoveInput.x;
     }
 
-    private void ApplyMovement(Vector3 movementDirection)
-        {
-            if (_groundDetector.IsGrounded)
-            {
-                Vector3 projected = Vector3.ProjectOnPlane(movementDirection, _groundDetector.GroundNormal);
-                Vector3 newVelocity = projected * _moveSpeed;
-                
-                if (_rb.linearVelocity.y > 0f)
-                {
-                    newVelocity.y = _rb.linearVelocity.y;
-                }
-
-                _rb.linearVelocity = newVelocity;
-                SnapToGround();
-            }
-            else
-            {
-                Vector3 velocity = movementDirection * _moveSpeed;
-                velocity.y = _rb.linearVelocity.y;
-                _rb.linearVelocity = velocity;
-            }
-        }
-   private void SnapToGround()
+    private void SnapToGround()
     {
         if (_rb.linearVelocity.y > 0.1f) return;
         if (_groundDetector.SlopeAngle > 5f) return;

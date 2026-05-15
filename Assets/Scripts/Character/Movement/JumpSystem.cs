@@ -3,15 +3,10 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody), typeof(IGroundDetector))]
 public class JumpSystem : MonoBehaviour
 {
-    [Header("References")]
     [SerializeField] private InputReader _inputReader;
-
-    [Header("Jump Physics")]
     [SerializeField] private float _jumpForce = 6f;
     [SerializeField] private float _jumpCutoffMultiplier = 0.4f;
     [SerializeField] private float _fallGravityMultiplier = 2.5f;
-
-    [Header("Game Feel (Forgiveness)")]
     [SerializeField] private float _coyoteTime = 0.15f;
     [SerializeField] private float _jumpBufferTime = 0.2f;
     [SerializeField] private float _jumpCooldown = 0.2f;
@@ -20,7 +15,6 @@ public class JumpSystem : MonoBehaviour
     private IGroundDetector _groundDetector;
     private IInputProvider _input;
 
-    
     private float _lastGroundedTime = -100f;
     private float _lastJumpPressedTime = -100f;
     private float _lastJumpTime = -100f;
@@ -44,33 +38,34 @@ public class JumpSystem : MonoBehaviour
         _input.OnJumpCancelled -= HandleJumpCancelled;
     }
 
-    private void Update()
+    public void UpdateTimers()
     {
-        
         if (_groundDetector.IsGrounded)
         {
             _lastGroundedTime = Time.time;
         }
     }
 
-    private void FixedUpdate()
+    public bool HandleJump()
     {
         ApplyFallGravity();
 
         if (CanJump())
         {
             PerformJump();
+            return true;
         }
+
+        return false;
     }
 
     private void HandleJumpStarted()
     {
-        _lastJumpPressedTime = Time.time; 
+        _lastJumpPressedTime = Time.time;
     }
 
     private void HandleJumpCancelled()
     {
-        
         if (!_groundDetector.IsGrounded && _rb.linearVelocity.y > 0f)
         {
             Vector3 velocity = _rb.linearVelocity;
@@ -99,7 +94,6 @@ public class JumpSystem : MonoBehaviour
     private void PerformJump()
     {
         _lastJumpTime = Time.time;
-        
         _lastJumpPressedTime = -100f;
         _lastGroundedTime = -100f;
 

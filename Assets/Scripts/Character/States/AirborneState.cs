@@ -1,0 +1,29 @@
+public class AirborneState : IState
+{
+    private readonly PlayerController _controller;
+
+    public AirborneState(PlayerController controller)
+    {
+        _controller = controller;
+    }
+
+    public void Enter() { }
+
+    public void Exit() { }
+
+    public void Tick()
+    {
+        _controller.Jump.UpdateTimers();
+
+        if (_controller.GroundDetector.IsGrounded && _controller.RB.linearVelocity.y <= 0f)
+        {
+            _controller.StateMachine.ChangeState(_controller.GroundedState);
+        }
+    }
+
+    public void FixedTick()
+    {
+        _controller.Movement.HandleAirborneMovement();
+        _controller.Jump.HandleJump();
+    }
+}
