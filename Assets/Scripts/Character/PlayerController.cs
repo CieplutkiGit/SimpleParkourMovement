@@ -26,6 +26,7 @@ public class PlayerController : MonoBehaviour
     public WallRunState WallRunState { get; private set; }
     public WallRunUpState WallRunUpState { get; private set; }
     public LedgeGrabState LedgeGrabState { get; private set; }
+    public ShimmyState ShimmyState { get; private set; }
     public ClimbUpState ClimbUpState { get; private set; }
 
     private void Awake()
@@ -52,6 +53,7 @@ public class PlayerController : MonoBehaviour
         WallRunState = new WallRunState(this);
         WallRunUpState = new WallRunUpState(this);
         LedgeGrabState = new LedgeGrabState(this);
+        ShimmyState = new ShimmyState(this);
         ClimbUpState = new ClimbUpState(this);
     }
 

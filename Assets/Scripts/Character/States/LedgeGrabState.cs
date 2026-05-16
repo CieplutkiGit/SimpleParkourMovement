@@ -9,7 +9,6 @@ public class LedgeGrabState : IState
     private Vector3 _hangPos;
     private Quaternion _hangRot;
     private float _timer;
-    private bool _snapped;
 
     public LedgeGrabState(PlayerController controller)
     {
@@ -28,48 +27,14 @@ public class LedgeGrabState : IState
         _hangPos = _controller.LedgeGrab.GetHangTarget(point, normal);
         _hangRot = _controller.LedgeGrab.GetHangRotation(normal);
         _timer = 0f;
-        _snapped = false;
     }
 
-    public void Exit()
-    {
-        _controller.LedgeGrab.ReleaseLedge();
-    }
+    public void Exit() { }
 
-    public void Tick()
-    {
-        if (!_snapped)
-            return;
-
-        float forwardInput = _controller.InputProvider != null ? _controller.InputProvider.MoveInput.y : 0f;
-
-        if (forwardInput > 0.5f)
-        {
-            _controller.LedgeDetector.PauseDetection(_controller.LedgeGrab.JumpCooldownDuration);
-            _controller.StateMachine.ChangeState(_controller.ClimbUpState);
-            return;
-        }
-
-        if (forwardInput < -0.5f)
-        {
-            _controller.LedgeDetector.PauseDetection(_controller.LedgeGrab.JumpCooldownDuration);
-            _controller.StateMachine.ChangeState(_controller.FallingState);
-            return;
-        }
-
-        if (_controller.Jump.CheckAndConsumeJumpInput())
-        {
-            _controller.LedgeDetector.PauseDetection(_controller.LedgeGrab.JumpCooldownDuration);
-            _controller.Jump.PerformLedgeJump(_controller.LedgeGrab.CachedLedgeNormal);
-            _controller.StateMachine.ChangeState(_controller.AirborneState);
-        }
-    }
+    public void Tick() { }
 
     public void FixedTick()
     {
-        if (_snapped)
-            return;
-
         _timer += Time.fixedDeltaTime;
         float t = _timer / _controller.LedgeGrab.SnapDuration;
         float smooth = Mathf.SmoothStep(0f, 1f, t);
@@ -78,6 +43,6 @@ public class LedgeGrabState : IState
         _controller.RB.MoveRotation(Quaternion.Slerp(_startRot, _hangRot, smooth));
 
         if (t >= 1f)
-            _snapped = true;
+            _controller.StateMachine.ChangeState(_controller.ShimmyState);
     }
 }

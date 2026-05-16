@@ -50,6 +50,20 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
         ResetDetection();
     }
 
+    public bool TryGetLedgeTop(Vector3 approxTop, out Vector3 ledgeTop)
+    {
+        Vector3 origin = approxTop + Vector3.up * 0.3f;
+
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 0.5f, _wallLayer))
+        {
+            ledgeTop = hit.point;
+            return true;
+        }
+
+        ledgeTop = approxTop;
+        return false;
+    }
+
     private void ResetDetection()
     {
         LedgeFound = false;

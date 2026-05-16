@@ -7,6 +7,7 @@ public class LedgeGrabSystem : MonoBehaviour
     [SerializeField] private float _forwardOffset = 0.3f;
     [SerializeField] private float _snapDuration = 0.18f;
     [SerializeField] private float _jumpCooldownDuration = 0.3f;
+    [SerializeField] private float _shimmySpeed = 2f;
 
     [SerializeField] private float _climbUpDuration = 0.4f;
     [SerializeField] private float _climbUpHeightOffset = 1.1f;
@@ -15,6 +16,7 @@ public class LedgeGrabSystem : MonoBehaviour
     public float JumpCooldownDuration => _jumpCooldownDuration;
     public float ClimbUpDuration => _climbUpDuration;
     public float SnapDuration => _snapDuration;
+    public float ShimmySpeed => _shimmySpeed;
 
     public Vector3 CachedLedgePoint { get; private set; }
     public Vector3 CachedLedgeNormal { get; private set; }
@@ -53,5 +55,16 @@ public class LedgeGrabSystem : MonoBehaviour
     public Vector3 GetClimbUpTarget(Vector3 ledgePoint, Vector3 ledgeNormal)
     {
         return ledgePoint + (Vector3.up * _climbUpHeightOffset) + (-ledgeNormal * _climbUpForwardOffset);
+    }
+
+    public Vector3 GetShimmyDirection(Vector3 ledgeNormal)
+    {
+        return Vector3.Cross(ledgeNormal, Vector3.up).normalized;
+    }
+
+    public void SetCachedLedge(Vector3 ledgePoint, Vector3 ledgeNormal)
+    {
+        CachedLedgePoint = ledgePoint;
+        CachedLedgeNormal = ledgeNormal;
     }
 }
