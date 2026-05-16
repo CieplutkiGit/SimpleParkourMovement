@@ -2,7 +2,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(MovementSystem), typeof(JumpSystem), typeof(LedgeGrabSystem))]
 [RequireComponent(typeof(GroundDetector), typeof(WallDetector), typeof(LedgeDetector))]
-[RequireComponent(typeof(WallRunSystem))]
+[RequireComponent(typeof(WallRunSystem), typeof(VaultSystem), typeof(VaultDetector))]
 public class PlayerController : MonoBehaviour
 {
     [SerializeField] private InputReader _inputReader;
@@ -14,10 +14,12 @@ public class PlayerController : MonoBehaviour
     public JumpSystem Jump { get; private set; }
     public LedgeGrabSystem LedgeGrab { get; private set; }
     public WallRunSystem WallRun { get; private set; }
-    
+    public VaultSystem Vault { get; private set; }
+
     public IGroundDetector GroundDetector { get; private set; }
     public IWallDetector WallDetector { get; private set; }
     public ILedgeDetector LedgeDetector { get; private set; }
+    public IVaultDetector VaultDetector { get; private set; }
 
     public StateMachine StateMachine { get; private set; }
     public GroundedState GroundedState { get; private set; }
@@ -28,6 +30,7 @@ public class PlayerController : MonoBehaviour
     public LedgeGrabState LedgeGrabState { get; private set; }
     public ShimmyState ShimmyState { get; private set; }
     public ClimbUpState ClimbUpState { get; private set; }
+    public VaultState VaultState { get; private set; }
 
     private void Awake()
     {
@@ -41,10 +44,12 @@ public class PlayerController : MonoBehaviour
         Jump = GetComponent<JumpSystem>();
         LedgeGrab = GetComponent<LedgeGrabSystem>();
         WallRun = GetComponent<WallRunSystem>();
-        
+        Vault = GetComponent<VaultSystem>();
+
         GroundDetector = GetComponent<IGroundDetector>();
         WallDetector = GetComponent<IWallDetector>();
         LedgeDetector = GetComponent<ILedgeDetector>();
+        VaultDetector = GetComponent<IVaultDetector>();
 
         StateMachine = new StateMachine();
         GroundedState = new GroundedState(this);
@@ -55,6 +60,7 @@ public class PlayerController : MonoBehaviour
         LedgeGrabState = new LedgeGrabState(this);
         ShimmyState = new ShimmyState(this);
         ClimbUpState = new ClimbUpState(this);
+        VaultState = new VaultState(this);
     }
 
     private void Start()
