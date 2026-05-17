@@ -18,6 +18,7 @@ public class CharacterAnimator : MonoBehaviour
 
     private IState _previousState;
     private bool _isShimmying;
+    private bool _climbMatched;
 
     private void Awake()
     {
@@ -37,6 +38,34 @@ public class CharacterAnimator : MonoBehaviour
         }
 
         UpdateContinuous(current);
+
+        if (current is ClimbUpState)
+            TryMatchClimb();
+        else
+            _climbMatched = false;
+    }
+
+    private void TryMatchClimb()
+    {
+        if (_climbMatched || _animator.IsInTransition(0) || _animator.isMatchingTarget)
+            return;
+
+        if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("ClimbUp"))
+            return;
+
+        Vector3 target = _player.LedgeGrab.GetClimbUpTarget(
+            _player.LedgeGrab.CachedLedgePoint,
+            _player.LedgeGrab.CachedLedgeNormal);
+
+        _animator.MatchTarget(
+            target,
+            _player.RB.rotation,
+            AvatarTarget.Root,
+            new MatchTargetWeightMask(Vector3.one, 0f),
+            _player.LedgeGrab.ClimbMatchStart,
+            _player.LedgeGrab.ClimbMatchEnd);
+
+        _climbMatched = true;
     }
 
     private void OnStateChanged(IState state)
@@ -97,10 +126,7 @@ public class CharacterAnimator : MonoBehaviour
         if (_player.StateMachine.CurrentState is not ClimbUpState)
             return;
 
-        Vector3 delta = _animator.deltaPosition;
-        delta.y *= _player.LedgeGrab.ClimbUpRiseScale;
-
-        _player.RB.MovePosition(_player.RB.position + delta);
+        _player.RB.MovePosition(_player.RB.position + _animator.deltaPosition);
         _player.RB.MoveRotation(_animator.deltaRotation * _player.RB.rotation);
     }
 

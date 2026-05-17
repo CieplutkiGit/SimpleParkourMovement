@@ -11,11 +11,15 @@ public class LedgeGrabSystem : MonoBehaviour
     [SerializeField] private float _strideSpeed = 2.2f;
 
     [SerializeField] private float _climbUpDuration = 0.4f;
-    [SerializeField] private float _climbUpRiseScale = 1.5f;
+    [SerializeField] private float _climbUpStandHeight = 1f;
+    [SerializeField] private float _climbUpStandForward = 0.4f;
+    [SerializeField] private float _climbMatchStart = 0.1f;
+    [SerializeField] private float _climbMatchEnd = 0.85f;
 
     public float JumpCooldownDuration => _jumpCooldownDuration;
     public float ClimbUpDuration => _climbUpDuration;
-    public float ClimbUpRiseScale => _climbUpRiseScale;
+    public float ClimbMatchStart => _climbMatchStart;
+    public float ClimbMatchEnd => _climbMatchEnd;
     public float SnapDuration => _snapDuration;
     public float StrideLength => _strideLength;
     public float StrideSpeed => _strideSpeed;
@@ -60,6 +64,11 @@ public class LedgeGrabSystem : MonoBehaviour
     public Quaternion GetHangRotation(Vector3 ledgeNormal)
     {
         return Quaternion.LookRotation(-ledgeNormal);
+    }
+
+    public Vector3 GetClimbUpTarget(Vector3 ledgePoint, Vector3 ledgeNormal)
+    {
+        return ledgePoint + (Vector3.up * _climbUpStandHeight) + (-ledgeNormal * _climbUpStandForward);
     }
 
     public Vector3 GetShimmyDirection(Vector3 ledgeNormal)

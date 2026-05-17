@@ -293,7 +293,7 @@ Transform:
   m_GameObject: {fileID: 104125780}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.745, y: 4.187, z: -7.89}
+  m_LocalPosition: {x: -5.661, y: 4.075, z: -7.974}
   m_LocalScale: {x: 3.0899, y: 0.13371442, z: 5.099}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1293,7 +1293,10 @@ MonoBehaviour:
   _strideLength: 0.45
   _strideSpeed: 2.2
   _climbUpDuration: 3.6
-  _climbUpRiseScale: 1
+  _climbUpStandHeight: 0.06
+  _climbUpStandForward: 0.1
+  _climbMatchStart: 0.6
+  _climbMatchEnd: 0.9
 --- !u!114 &810815804
 MonoBehaviour:
   m_ObjectHideFlags: 0
