@@ -3,29 +3,31 @@ using UnityEngine;
 public class ClimbUpState : IState
 {
     private readonly PlayerController _controller;
-    
+    private readonly Collider _collider;
+
     private float _timer;
-    private Vector3 _startPos;
-    private Vector3 _endPos;
 
     public ClimbUpState(PlayerController controller)
     {
         _controller = controller;
+        _collider = controller.GetComponent<Collider>();
     }
 
     public void Enter()
     {
         _controller.RB.isKinematic = true;
+        _collider.enabled = false;
         _timer = 0f;
-        _startPos = _controller.transform.position;
 
         Vector3 point = _controller.LedgeGrab.CachedLedgePoint;
         Vector3 normal = _controller.LedgeGrab.CachedLedgeNormal;
-        _endPos = _controller.LedgeGrab.GetClimbUpTarget(point, normal);
+        _controller.RB.position = _controller.LedgeGrab.GetHangTarget(point, normal);
+        _controller.RB.rotation = _controller.LedgeGrab.GetHangRotation(normal);
     }
 
     public void Exit()
     {
+        _collider.enabled = true;
         _controller.RB.isKinematic = false;
     }
 
@@ -36,14 +38,8 @@ public class ClimbUpState : IState
     public void FixedTick()
     {
         _timer += Time.fixedDeltaTime;
-        float percent = _timer / _controller.LedgeGrab.ClimbUpDuration;
 
-        Vector3 currentPos = Vector3.Lerp(_startPos, _endPos, percent);
-        currentPos.y += Mathf.Sin(percent * Mathf.PI) * 0.5f;
-
-        _controller.RB.MovePosition(currentPos);
-
-        if (percent >= 1f)
+        if (_timer >= _controller.LedgeGrab.ClimbUpDuration)
         {
             _controller.StateMachine.ChangeState(_controller.GroundedState);
         }

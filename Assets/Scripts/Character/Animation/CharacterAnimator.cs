@@ -92,6 +92,18 @@ public class CharacterAnimator : MonoBehaviour
         }
     }
 
+    public void ApplyRootMotion()
+    {
+        if (_player.StateMachine.CurrentState is not ClimbUpState)
+            return;
+
+        Vector3 delta = _animator.deltaPosition;
+        delta.y *= _player.LedgeGrab.ClimbUpRiseScale;
+
+        _player.RB.MovePosition(_player.RB.position + delta);
+        _player.RB.MoveRotation(_animator.deltaRotation * _player.RB.rotation);
+    }
+
     public void RunIK(int layerIndex)
     {
         IState current = _player.StateMachine.CurrentState;
