@@ -5,7 +5,8 @@ public class MovementSystem : MonoBehaviour
 {
     [SerializeField] private InputReader _inputReader;
     [SerializeField] private Transform _cameraTransform;
-    [SerializeField] private float _moveSpeed = 5f;
+    [SerializeField] private float _walkSpeed = 2f;
+    [SerializeField] private float _runSpeed = 5f;
     [SerializeField] private float _rotationSpeed = 10f;
     [SerializeField] private float _groundSnapOffset = 0.5f;
 
@@ -29,7 +30,8 @@ public class MovementSystem : MonoBehaviour
         Vector3 movementDirection = GetMovementDirection();
         Vector3 projected = Vector3.ProjectOnPlane(movementDirection, _groundDetector.GroundNormal);
         
-        _rb.linearVelocity = projected * _moveSpeed;
+        float speed = _input.IsSprintHeld ? _runSpeed : _walkSpeed;
+        _rb.linearVelocity = projected * speed;
         
         SnapToGround();
         RotateCharacter(movementDirection);
@@ -46,7 +48,7 @@ public class MovementSystem : MonoBehaviour
             movementDirection = Vector3.ProjectOnPlane(movementDirection, _wallDetector.FrontWallNormal);
         }
 
-        Vector3 velocity = movementDirection * _moveSpeed;
+        Vector3 velocity = movementDirection * _runSpeed;
         velocity.y = _rb.linearVelocity.y;
 
         _rb.linearVelocity = velocity;

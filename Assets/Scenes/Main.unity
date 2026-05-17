@@ -1194,7 +1194,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MovementSystem
   _inputReader: {fileID: 11400000, guid: c2d2be9e2dee560428887155dc89e623, type: 2}
   _cameraTransform: {fileID: 330585546}
-  _moveSpeed: 5
+  _walkSpeed: 2
+  _runSpeed: 5
   _rotationSpeed: 10
   _groundSnapOffset: 1
 --- !u!114 &810815799
