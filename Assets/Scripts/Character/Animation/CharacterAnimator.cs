@@ -86,7 +86,7 @@ public class CharacterAnimator : MonoBehaviour
                 _animator.CrossFade("Fall", StateBlend);
                 break;
             case WallRunState:
-                _animator.CrossFade("WallRun", FastStateBlend);
+                _animator.CrossFade(_player.WallDetector.IsWallLeft ? "WallRun" : "WallRunMirror", FastStateBlend);
                 break;
             case WallRunUpState:
                 _animator.CrossFade("WallClimbUp", FastStateBlend);

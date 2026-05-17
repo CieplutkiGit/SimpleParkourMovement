@@ -7,6 +7,7 @@ public class MovementSystem : MonoBehaviour
     [SerializeField] private Transform _cameraTransform;
     [SerializeField] private float _walkSpeed = 2f;
     [SerializeField] private float _runSpeed = 5f;
+    [SerializeField] private float _airControl = 8f;
     [SerializeField] private float _rotationSpeed = 10f;
     [SerializeField] private float _groundSnapOffset = 0.5f;
 
@@ -41,19 +42,32 @@ public class MovementSystem : MonoBehaviour
     {
         _rb.useGravity = true;
 
-        Vector3 movementDirection = GetMovementDirection();
+        Vector3 wishDirection = GetMovementDirection();
 
-        if (_wallDetector.IsWallFront && Vector3.Dot(movementDirection, _wallDetector.FrontWallNormal) < 0f)
+        Vector3 horizontal = _rb.linearVelocity;
+        horizontal.y = 0f;
+
+        float maxSpeed = Mathf.Max(_runSpeed, horizontal.magnitude);
+
+        if (wishDirection.sqrMagnitude > 0.01f)
         {
-            movementDirection = Vector3.ProjectOnPlane(movementDirection, _wallDetector.FrontWallNormal);
+            horizontal += wishDirection.normalized * _airControl * Time.fixedDeltaTime;
+
+            if (horizontal.magnitude > maxSpeed)
+                horizontal = horizontal.normalized * maxSpeed;
         }
 
-        Vector3 velocity = movementDirection * _runSpeed;
+        if (_wallDetector.IsWallFront && Vector3.Dot(horizontal, _wallDetector.FrontWallNormal) < 0f)
+        {
+            horizontal = Vector3.ProjectOnPlane(horizontal, _wallDetector.FrontWallNormal);
+        }
+
+        Vector3 velocity = horizontal;
         velocity.y = _rb.linearVelocity.y;
 
         _rb.linearVelocity = velocity;
 
-        RotateCharacter(movementDirection);
+        RotateCharacter(wishDirection);
     }
 
     private Vector3 GetMovementDirection()

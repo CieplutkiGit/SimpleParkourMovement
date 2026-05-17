@@ -9,6 +9,7 @@ public class WallRunSystem : MonoBehaviour
     [SerializeField] private float _wallRunFallSpeed = 4f;
     [SerializeField] private float _wallStickForce = 8f;
     [SerializeField] private float _wallRunDuration = 1.5f;
+    [SerializeField] private float _minEntrySpeed = 3f;
 
     [Header("Run Up")]
     [SerializeField] private float _wallRunUpSpeed = 6f;
@@ -16,6 +17,7 @@ public class WallRunSystem : MonoBehaviour
 
     public float WallRunDuration => _wallRunDuration;
     public float WallRunUpDuration => _wallRunUpDuration;
+    public float MinEntrySpeed => _minEntrySpeed;
     public bool WallRunAvailable { get; private set; } = true;
 
     private Rigidbody _rb;

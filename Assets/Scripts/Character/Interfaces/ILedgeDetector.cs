@@ -7,5 +7,5 @@ public interface ILedgeDetector
     Vector3 LedgeNormal { get; }
     void PauseDetection(float duration);
     bool TryGetLedgeTop(Vector3 approxTop, out Vector3 ledgeTop);
-    bool TryGetOuterCorner(Vector3 cornerApprox, Vector3 worldTravel, out Vector3 ledgePoint, out Vector3 ledgeNormal);
+    bool TryGetOuterCorner(Vector3 cornerApprox, Vector3 worldTravel, Vector3 currentNormal, out Vector3 ledgePoint, out Vector3 ledgeNormal);
 }

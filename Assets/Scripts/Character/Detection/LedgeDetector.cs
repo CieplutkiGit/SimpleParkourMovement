@@ -12,6 +12,7 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
     private const float LedgeTopTolerance = 0.2f;
     private const float LedgeTopProbeHeight = 0.3f;
     private const float LedgeTopProbeDistance = 0.5f;
+    private const float CornerInset = 0.08f;
 
     public bool LedgeFound { get; private set; }
     public Vector3 LedgePoint { get; private set; }
@@ -69,17 +70,18 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
         return false;
     }
 
-    public bool TryGetOuterCorner(Vector3 cornerApprox, Vector3 worldTravel, out Vector3 ledgePoint, out Vector3 ledgeNormal)
+    public bool TryGetOuterCorner(Vector3 cornerApprox, Vector3 worldTravel, Vector3 currentNormal, out Vector3 ledgePoint, out Vector3 ledgeNormal)
     {
         ledgePoint = cornerApprox;
         ledgeNormal = Vector3.zero;
 
-        Vector3 probeOrigin = cornerApprox + worldTravel * _cornerProbeForward - Vector3.up * (_headHeight - _chestHeight);
+        Vector3 inset = -currentNormal * CornerInset;
+        Vector3 probeOrigin = cornerApprox + inset + worldTravel * _cornerProbeForward - Vector3.up * (_headHeight - _chestHeight);
 
         if (!Physics.Raycast(probeOrigin, -worldTravel, out RaycastHit wallHit, _cornerProbeForward + _forwardDistance, _wallLayer))
             return false;
 
-        Vector3 approxTop = new Vector3(wallHit.point.x, cornerApprox.y, wallHit.point.z);
+        Vector3 approxTop = new Vector3(wallHit.point.x, cornerApprox.y, wallHit.point.z) - wallHit.normal * CornerInset;
 
         if (!TryGetLedgeTop(approxTop, out Vector3 top))
             return false;

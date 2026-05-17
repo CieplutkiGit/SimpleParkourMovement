@@ -32,6 +32,7 @@ public class WallRunUpState : IState
 
         if (_controller.Jump.CheckAndConsumeJumpInput())
         {
+            _controller.WallRun.ConsumeWallRun();
             _controller.Jump.PerformWallJump(_controller.WallDetector.FrontWallNormal);
             _controller.StateMachine.ChangeState(_controller.AirborneState);
             return;

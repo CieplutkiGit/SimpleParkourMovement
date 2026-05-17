@@ -114,7 +114,7 @@ public class ShimmyState : IState
 
         if (!_controller.LedgeDetector.TryGetLedgeTop(target, out Vector3 top))
         {
-            if (!_controller.LedgeDetector.TryGetOuterCorner(target, d * _dir, out top, out Vector3 newNormal))
+            if (!_controller.LedgeDetector.TryGetOuterCorner(target, d * _dir, _normal, out top, out Vector3 newNormal))
                 return;
 
             corner = true;
