@@ -9,6 +9,10 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
     [SerializeField] private float _cornerProbeForward = 0.4f;
     [SerializeField] private LayerMask _wallLayer;
 
+    private const float LedgeTopTolerance = 0.2f;
+    private const float LedgeTopProbeHeight = 0.3f;
+    private const float LedgeTopProbeDistance = 0.5f;
+
     public bool LedgeFound { get; private set; }
     public Vector3 LedgePoint { get; private set; }
     public Vector3 LedgeNormal { get; private set; }
@@ -31,7 +35,7 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
         {
             Vector3 downOrigin = forwardHit.point + (transform.forward * _ledgeForwardOffset) + (Vector3.up * (_headHeight - _chestHeight));
             
-            bool topHit = Physics.Raycast(downOrigin, Vector3.down, out RaycastHit downHit, _headHeight - _chestHeight + 0.2f, _wallLayer);
+            bool topHit = Physics.Raycast(downOrigin, Vector3.down, out RaycastHit downHit, _headHeight - _chestHeight + LedgeTopTolerance, _wallLayer);
 
             if (topHit)
             {
@@ -53,9 +57,9 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
 
     public bool TryGetLedgeTop(Vector3 approxTop, out Vector3 ledgeTop)
     {
-        Vector3 origin = approxTop + Vector3.up * 0.3f;
+        Vector3 origin = approxTop + Vector3.up * LedgeTopProbeHeight;
 
-        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, 0.5f, _wallLayer))
+        if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, LedgeTopProbeDistance, _wallLayer))
         {
             ledgeTop = hit.point;
             return true;
@@ -103,7 +107,7 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
         {
             Vector3 downOrigin = hit.point + (transform.forward * _ledgeForwardOffset) + (Vector3.up * (_headHeight - _chestHeight));
             Gizmos.color = Color.yellow;
-            Gizmos.DrawLine(downOrigin, downOrigin + Vector3.down * (_headHeight - _chestHeight + 0.2f));
+            Gizmos.DrawLine(downOrigin, downOrigin + Vector3.down * (_headHeight - _chestHeight + LedgeTopTolerance));
             
             if (LedgeFound)
             {

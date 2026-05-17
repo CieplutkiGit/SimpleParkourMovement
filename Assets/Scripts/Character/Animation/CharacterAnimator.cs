@@ -5,6 +5,10 @@ public class CharacterAnimator : MonoBehaviour
 {
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
+    private const float StateBlend = 0.15f;
+    private const float FastStateBlend = 0.1f;
+    private const float SpeedDamp = 0.1f;
+
     [SerializeField] private LayerMask _groundLayer;
     [SerializeField] private float _footOffset = 0.1f;
     [SerializeField] private float _handForwardOffset = 0.15f;
@@ -73,29 +77,29 @@ public class CharacterAnimator : MonoBehaviour
         switch (state)
         {
             case GroundedState:
-                _animator.CrossFade("Locomotion", 0.15f);
+                _animator.CrossFade("Locomotion", StateBlend);
                 break;
             case AirborneState:
-                _animator.CrossFade("Jump", 0.1f);
+                _animator.CrossFade("Jump", FastStateBlend);
                 break;
             case FallingState:
-                _animator.CrossFade("Fall", 0.15f);
+                _animator.CrossFade("Fall", StateBlend);
                 break;
             case WallRunState:
-                _animator.CrossFade("WallRun", 0.1f);
+                _animator.CrossFade("WallRun", FastStateBlend);
                 break;
             case WallRunUpState:
-                _animator.CrossFade("WallClimbUp", 0.1f);
+                _animator.CrossFade("WallClimbUp", FastStateBlend);
                 break;
             case LedgeGrabState:
             case ShimmyState:
-                _animator.CrossFade("Hang", 0.15f);
+                _animator.CrossFade("Hang", StateBlend);
                 break;
             case ClimbUpState:
-                _animator.CrossFade("ClimbUp", 0.1f);
+                _animator.CrossFade("ClimbUp", FastStateBlend);
                 break;
             case VaultState:
-                _animator.CrossFade("Vault", 0.1f);
+                _animator.CrossFade("Vault", FastStateBlend);
                 break;
         }
     }
@@ -104,7 +108,7 @@ public class CharacterAnimator : MonoBehaviour
     {
         if (state is GroundedState)
         {
-            _animator.SetFloat(SpeedHash, _player.RB.linearVelocity.magnitude, 0.1f, Time.deltaTime);
+            _animator.SetFloat(SpeedHash, _player.RB.linearVelocity.magnitude, SpeedDamp, Time.deltaTime);
             return;
         }
 
@@ -117,7 +121,7 @@ public class CharacterAnimator : MonoBehaviour
                 return;
 
             _isShimmying = moving;
-            _animator.CrossFade(moving ? "Shimmy" : "Hang", 0.1f);
+            _animator.CrossFade(moving ? "Shimmy" : "Hang", FastStateBlend);
         }
     }
 
