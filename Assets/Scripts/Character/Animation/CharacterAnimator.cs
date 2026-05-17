@@ -7,6 +7,11 @@ public class CharacterAnimator : MonoBehaviour
 
     [SerializeField] private LayerMask _groundLayer;
     [SerializeField] private float _footOffset = 0.1f;
+    [SerializeField] private float _handForwardOffset = 0.15f;
+    [SerializeField] private float _handHeightOffset = -0.05f;
+    [SerializeField] private LayerMask _wallLayer;
+    [SerializeField] private float _footHangDrop = 0.55f;
+    [SerializeField] private float _footHangSpread = 0.12f;
 
     private Animator _animator;
     private PlayerController _player;
@@ -87,16 +92,56 @@ public class CharacterAnimator : MonoBehaviour
         }
     }
 
-    private void OnAnimatorIK(int layerIndex)
+    public void RunIK(int layerIndex)
     {
-        if (_player.StateMachine.CurrentState is not GroundedState)
+        IState current = _player.StateMachine.CurrentState;
+
+        if (current is GroundedState)
+        {
+            float speed = _player.RB.linearVelocity.magnitude;
+            float ikWeight = Mathf.Clamp01(1f - speed / 2f);
+            ApplyFootIK(AvatarIKGoal.LeftFoot, ikWeight);
+            ApplyFootIK(AvatarIKGoal.RightFoot, ikWeight);
             return;
+        }
 
-        float speed = _player.RB.linearVelocity.magnitude;
-        float ikWeight = Mathf.Clamp01(1f - speed / 2f);
+        if (current is LedgeGrabState or ShimmyState)
+        {
+            ApplyLedgeHandIK();
+            ApplyHangFootIK();
+        }
+    }
 
-        ApplyFootIK(AvatarIKGoal.LeftFoot, ikWeight);
-        ApplyFootIK(AvatarIKGoal.RightFoot, ikWeight);
+    private void ApplyHangFootIK()
+    {
+        Vector3 normal = _player.LedgeGrab.CachedLedgeNormal;
+        Vector3 baseFoot = transform.position + Vector3.down * _footHangDrop;
+
+        ApplyWallFoot(AvatarIKGoal.LeftFoot, baseFoot - transform.right * _footHangSpread, normal);
+        ApplyWallFoot(AvatarIKGoal.RightFoot, baseFoot + transform.right * _footHangSpread, normal);
+    }
+
+    private void ApplyWallFoot(AvatarIKGoal foot, Vector3 height, Vector3 wallNormal)
+    {
+        Vector3 target = height;
+
+        if (Physics.Raycast(height + wallNormal * 0.3f, -wallNormal, out RaycastHit hit, 0.6f, _wallLayer))
+            target = hit.point + wallNormal * _footOffset;
+
+        _animator.SetIKPositionWeight(foot, 1f);
+        _animator.SetIKPosition(foot, target);
+    }
+
+    private void ApplyLedgeHandIK()
+    {
+        Vector3 ledgeNormal = _player.LedgeGrab.CachedLedgeNormal;
+        Vector3 gripOffset = ledgeNormal * _handForwardOffset + Vector3.up * _handHeightOffset;
+
+        _animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1f);
+        _animator.SetIKPosition(AvatarIKGoal.RightHand, _player.LedgeGrab.RightHandAnchor + gripOffset);
+
+        _animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, 1f);
+        _animator.SetIKPosition(AvatarIKGoal.LeftHand, _player.LedgeGrab.LeftHandAnchor + gripOffset);
     }
 
     private void ApplyFootIK(AvatarIKGoal foot, float weight)
