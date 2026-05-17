@@ -9,7 +9,7 @@ public class GroundedState : IState
 
     public void Enter()
     {
-        _controller.WallRun.ResetWallRun();
+        _controller.WallRun.ClearWallMemory();
     }
 
     public void Exit() { }

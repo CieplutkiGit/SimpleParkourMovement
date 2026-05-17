@@ -5,6 +5,7 @@ public class WallRunState : IState
     private readonly PlayerController _controller;
 
     private float _timer;
+    private Vector3 _wallNormal;
 
     public WallRunState(PlayerController controller)
     {
@@ -15,19 +16,20 @@ public class WallRunState : IState
     {
         _controller.RB.useGravity = false;
         _timer = 0f;
+        _wallNormal = _controller.WallDetector.WallNormal;
     }
 
     public void Exit()
     {
         _controller.RB.useGravity = true;
+        _controller.WallRun.RememberWall(_wallNormal);
     }
 
     public void Tick()
     {
         if (_controller.Jump.CheckAndConsumeJumpInput())
         {
-            _controller.WallRun.ConsumeWallRun();
-            _controller.Jump.PerformWallJump(_controller.WallDetector.WallNormal);
+            _controller.Jump.PerformWallJump(_wallNormal);
             _controller.StateMachine.ChangeState(_controller.AirborneState);
             return;
         }
@@ -46,7 +48,6 @@ public class WallRunState : IState
 
         if (_timer >= _controller.WallRun.WallRunDuration)
         {
-            _controller.WallRun.ConsumeWallRun();
             _controller.StateMachine.ChangeState(_controller.FallingState);
         }
     }
@@ -55,6 +56,11 @@ public class WallRunState : IState
     {
         _timer += Time.fixedDeltaTime;
         float t = _timer / _controller.WallRun.WallRunDuration;
-        _controller.WallRun.ApplyWallRun(_controller.WallDetector.WallNormal, t);
+
+        Vector3 detected = _controller.WallDetector.WallNormal;
+        if (detected != Vector3.zero)
+            _wallNormal = detected;
+
+        _controller.WallRun.ApplyWallRun(_wallNormal, t);
     }
 }

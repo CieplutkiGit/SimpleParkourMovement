@@ -6,7 +6,7 @@ public static class WallRunEntry
     {
         float forwardInput = controller.InputProvider != null ? controller.InputProvider.MoveInput.y : 0f;
 
-        if (forwardInput <= 0.1f || !controller.WallRun.WallRunAvailable)
+        if (forwardInput <= 0.1f)
             return false;
 
         Vector3 horizontalVelocity = controller.RB.linearVelocity;
@@ -15,13 +15,14 @@ public static class WallRunEntry
         if (horizontalVelocity.magnitude < controller.WallRun.MinEntrySpeed)
             return false;
 
-        if (controller.WallDetector.IsWallFront)
+        if (controller.WallDetector.IsWallFront && controller.WallRun.CanRunWall(controller.WallDetector.FrontWallNormal))
         {
             controller.StateMachine.ChangeState(controller.WallRunUpState);
             return true;
         }
 
-        if (controller.WallDetector.IsWallLeft || controller.WallDetector.IsWallRight)
+        if ((controller.WallDetector.IsWallLeft || controller.WallDetector.IsWallRight)
+            && controller.WallRun.CanRunWall(controller.WallDetector.WallNormal))
         {
             controller.StateMachine.ChangeState(controller.WallRunState);
             return true;

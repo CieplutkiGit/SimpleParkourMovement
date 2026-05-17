@@ -10,6 +10,7 @@ public class WallRunSystem : MonoBehaviour
     [SerializeField] private float _wallStickForce = 8f;
     [SerializeField] private float _wallRunDuration = 1.5f;
     [SerializeField] private float _minEntrySpeed = 3f;
+    [SerializeField] private float _sameWallThreshold = 0.95f;
 
     [Header("Run Up")]
     [SerializeField] private float _wallRunUpSpeed = 6f;
@@ -18,23 +19,34 @@ public class WallRunSystem : MonoBehaviour
     public float WallRunDuration => _wallRunDuration;
     public float WallRunUpDuration => _wallRunUpDuration;
     public float MinEntrySpeed => _minEntrySpeed;
-    public bool WallRunAvailable { get; private set; } = true;
 
     private Rigidbody _rb;
+
+    private Vector3 _lastWallNormal;
+    private bool _hasLastWall;
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
     }
 
-    public void ConsumeWallRun()
+    public void RememberWall(Vector3 wallNormal)
     {
-        WallRunAvailable = false;
+        _lastWallNormal = wallNormal;
+        _hasLastWall = true;
     }
 
-    public void ResetWallRun()
+    public void ClearWallMemory()
     {
-        WallRunAvailable = true;
+        _hasLastWall = false;
+    }
+
+    public bool CanRunWall(Vector3 candidateNormal)
+    {
+        if (!_hasLastWall)
+            return true;
+
+        return Vector3.Dot(candidateNormal, _lastWallNormal) < _sameWallThreshold;
     }
 
     public void ApplyWallRun(Vector3 wallNormal, float t)
