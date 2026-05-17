@@ -6,6 +6,7 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
     [SerializeField] private float _headHeight = 2.2f;
     [SerializeField] private float _forwardDistance = 1f;
     [SerializeField] private float _ledgeForwardOffset = 0.2f;
+    [SerializeField] private float _cornerProbeForward = 0.4f;
     [SerializeField] private LayerMask _wallLayer;
 
     public bool LedgeFound { get; private set; }
@@ -62,6 +63,26 @@ public class LedgeDetector : MonoBehaviour, ILedgeDetector
 
         ledgeTop = approxTop;
         return false;
+    }
+
+    public bool TryGetOuterCorner(Vector3 cornerApprox, Vector3 worldTravel, out Vector3 ledgePoint, out Vector3 ledgeNormal)
+    {
+        ledgePoint = cornerApprox;
+        ledgeNormal = Vector3.zero;
+
+        Vector3 probeOrigin = cornerApprox + worldTravel * _cornerProbeForward - Vector3.up * (_headHeight - _chestHeight);
+
+        if (!Physics.Raycast(probeOrigin, -worldTravel, out RaycastHit wallHit, _cornerProbeForward + _forwardDistance, _wallLayer))
+            return false;
+
+        Vector3 approxTop = new Vector3(wallHit.point.x, cornerApprox.y, wallHit.point.z);
+
+        if (!TryGetLedgeTop(approxTop, out Vector3 top))
+            return false;
+
+        ledgePoint = top;
+        ledgeNormal = wallHit.normal;
+        return true;
     }
 
     private void ResetDetection()

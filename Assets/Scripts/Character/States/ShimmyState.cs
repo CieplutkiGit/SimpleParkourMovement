@@ -12,6 +12,9 @@ public class ShimmyState : IState
     private bool _frontIsRight;
 
     private bool _striding;
+    private bool _cornerTurn;
+    private Vector3 _normalFrom;
+    private Vector3 _normalTo;
     private float _phase;
     private int _dir;
     private Vector3 _reachFrom;
@@ -107,13 +110,23 @@ public class ShimmyState : IState
 
         Vector3 target = _frontAnchor + d * _dir * _controller.LedgeGrab.StrideLength;
 
-        if (!_controller.LedgeDetector.TryGetLedgeTop(target, out Vector3 top))
-            return;
+        bool corner = false;
 
+        if (!_controller.LedgeDetector.TryGetLedgeTop(target, out Vector3 top))
+        {
+            if (!_controller.LedgeDetector.TryGetOuterCorner(target, d * _dir, out top, out Vector3 newNormal))
+                return;
+
+            corner = true;
+            _normalFrom = _normal;
+            _normalTo = newNormal;
+        }
+
+        _cornerTurn = corner;
         _reachFrom = _rearAnchor;
         _reachTo = top;
         _bodyStart = _point;
-        _bodyEnd = (top + _frontAnchor) * 0.5f;
+        _bodyEnd = corner ? top : (top + _frontAnchor) * 0.5f;
         _phase = 0f;
         _striding = true;
     }
@@ -134,10 +147,19 @@ public class ShimmyState : IState
             float b = Mathf.SmoothStep(0f, 1f, (p - 0.5f) / 0.5f);
             AssignRear(_reachTo);
             _point = Vector3.Lerp(_bodyStart, _bodyEnd, b);
+
+            if (_cornerTurn)
+                _normal = Vector3.Slerp(_normalFrom, _normalTo, b);
         }
 
         if (_phase < 1f)
             return;
+
+        if (_cornerTurn)
+        {
+            _normal = _normalTo;
+            _cornerTurn = false;
+        }
 
         Vector3 newFront = _reachTo;
         Vector3 newRear = _frontAnchor;
