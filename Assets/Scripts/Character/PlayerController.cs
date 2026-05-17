@@ -15,6 +15,7 @@ public class PlayerController : MonoBehaviour
     public LedgeGrabSystem LedgeGrab { get; private set; }
     public WallRunSystem WallRun { get; private set; }
     public VaultSystem Vault { get; private set; }
+    public CharacterAnimator CharacterAnimator { get; private set; }
 
     public IGroundDetector GroundDetector { get; private set; }
     public IWallDetector WallDetector { get; private set; }
@@ -45,6 +46,7 @@ public class PlayerController : MonoBehaviour
         LedgeGrab = GetComponent<LedgeGrabSystem>();
         WallRun = GetComponent<WallRunSystem>();
         Vault = GetComponent<VaultSystem>();
+        CharacterAnimator = GetComponent<CharacterAnimator>();
 
         GroundDetector = GetComponent<IGroundDetector>();
         WallDetector = GetComponent<IWallDetector>();

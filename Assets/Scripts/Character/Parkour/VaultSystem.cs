@@ -3,11 +3,11 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class VaultSystem : MonoBehaviour
 {
-    [SerializeField] private float _vaultDuration = 0.45f;
-    [SerializeField] private float _arcClearance = 0.3f;
+    [SerializeField] private float _vaultMatchStart = 0.1f;
+    [SerializeField] private float _vaultMatchEnd = 0.85f;
 
-    public float VaultDuration => _vaultDuration;
-    public float ArcClearance => _arcClearance;
+    public float VaultMatchStart => _vaultMatchStart;
+    public float VaultMatchEnd => _vaultMatchEnd;
 
     private Rigidbody _rb;
 
@@ -25,12 +25,5 @@ public class VaultSystem : MonoBehaviour
     public void ReleaseVault()
     {
         _rb.isKinematic = false;
-    }
-
-    public Vector3 GetVaultPoint(Vector3 start, Vector3 target, float apexY, float t)
-    {
-        Vector3 pos = Vector3.Lerp(start, target, t);
-        pos.y += (apexY - Mathf.Max(start.y, target.y)) * Mathf.Sin(t * Mathf.PI);
-        return pos;
     }
 }

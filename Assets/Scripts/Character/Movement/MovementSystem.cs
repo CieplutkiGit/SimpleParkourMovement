@@ -11,6 +11,8 @@ public class MovementSystem : MonoBehaviour
     [SerializeField] private float _rotationSpeed = 10f;
     [SerializeField] private float _groundSnapOffset = 0.5f;
 
+    public float GroundSnapOffset => _groundSnapOffset;
+
     private Rigidbody _rb;
     private IGroundDetector _groundDetector;
     private IWallDetector _wallDetector;

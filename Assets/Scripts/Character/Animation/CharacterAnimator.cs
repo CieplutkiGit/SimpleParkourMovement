@@ -23,11 +23,32 @@ public class CharacterAnimator : MonoBehaviour
     private IState _previousState;
     private bool _isShimmying;
     private bool _climbMatched;
+    private bool _vaultMatched;
 
     private void Awake()
     {
         _animator = GetComponentInChildren<Animator>();
         _player = GetComponent<PlayerController>();
+    }
+
+    public bool TryGetStateProgress(string stateName, out float progress)
+    {
+        if (_animator.IsInTransition(0))
+        {
+            progress = 0f;
+            return false;
+        }
+
+        AnimatorStateInfo state = _animator.GetCurrentAnimatorStateInfo(0);
+
+        if (!state.IsName(stateName))
+        {
+            progress = 0f;
+            return false;
+        }
+
+        progress = Mathf.Clamp01(state.normalizedTime);
+        return true;
     }
 
     private void Update()
@@ -47,6 +68,11 @@ public class CharacterAnimator : MonoBehaviour
             TryMatchClimb();
         else
             _climbMatched = false;
+
+        if (current is VaultState)
+            TryMatchVault();
+        else
+            _vaultMatched = false;
     }
 
     private void TryMatchClimb()
@@ -70,6 +96,27 @@ public class CharacterAnimator : MonoBehaviour
             _player.LedgeGrab.ClimbMatchEnd);
 
         _climbMatched = true;
+    }
+
+    private void TryMatchVault()
+    {
+        if (_vaultMatched || _animator.IsInTransition(0) || _animator.isMatchingTarget)
+            return;
+
+        if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("Vault"))
+            return;
+
+        Vector3 target = _player.VaultDetector.VaultTarget + Vector3.up * _player.Movement.GroundSnapOffset;
+
+        _animator.MatchTarget(
+            target,
+            _player.RB.rotation,
+            AvatarTarget.Root,
+            new MatchTargetWeightMask(Vector3.one, 0f),
+            _player.Vault.VaultMatchStart,
+            _player.Vault.VaultMatchEnd);
+
+        _vaultMatched = true;
     }
 
     private void OnStateChanged(IState state)
@@ -127,7 +174,9 @@ public class CharacterAnimator : MonoBehaviour
 
     public void ApplyRootMotion()
     {
-        if (_player.StateMachine.CurrentState is not ClimbUpState)
+        IState current = _player.StateMachine.CurrentState;
+
+        if (current is not ClimbUpState && current is not VaultState)
             return;
 
         _player.RB.MovePosition(_player.RB.position + _animator.deltaPosition);

@@ -3,28 +3,23 @@ using UnityEngine;
 public class VaultState : IState
 {
     private readonly PlayerController _controller;
-
-    private float _timer;
-    private Vector3 _startPos;
-    private Vector3 _targetPos;
-    private float _apexY;
+    private readonly Collider _collider;
 
     public VaultState(PlayerController controller)
     {
         _controller = controller;
+        _collider = controller.GetComponent<Collider>();
     }
 
     public void Enter()
     {
         _controller.Vault.BeginVault();
-        _timer = 0f;
-        _startPos = _controller.transform.position;
-        _targetPos = _controller.VaultDetector.VaultTarget;
-        _apexY = _controller.VaultDetector.ObstacleTop.y + _controller.Vault.ArcClearance;
+        _collider.enabled = false;
     }
 
     public void Exit()
     {
+        _collider.enabled = true;
         _controller.Vault.ReleaseVault();
     }
 
@@ -32,12 +27,7 @@ public class VaultState : IState
 
     public void FixedTick()
     {
-        _timer += Time.fixedDeltaTime;
-        float t = _timer / _controller.Vault.VaultDuration;
-
-        _controller.RB.MovePosition(_controller.Vault.GetVaultPoint(_startPos, _targetPos, _apexY, t));
-
-        if (t >= 1f)
+        if (_controller.CharacterAnimator.TryGetStateProgress("Vault", out float t) && t >= 1f)
             _controller.StateMachine.ChangeState(_controller.GroundedState);
     }
 }
