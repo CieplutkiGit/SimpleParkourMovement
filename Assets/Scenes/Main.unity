@@ -1293,10 +1293,10 @@ MonoBehaviour:
   _strideLength: 0.45
   _strideSpeed: 2.2
   _climbUpDuration: 3.6
-  _climbUpStandHeight: 0.06
+  _climbUpStandHeight: 0.01
   _climbUpStandForward: 0.1
-  _climbMatchStart: 0.6
-  _climbMatchEnd: 0.9
+  _climbMatchStart: 0.9
+  _climbMatchEnd: 1
 --- !u!114 &810815804
 MonoBehaviour:
   m_ObjectHideFlags: 0
