@@ -60,7 +60,7 @@ public class ShimmyState : IState
             Vector3 candidate = _point + direction * Mathf.Sign(input) * _controller.LedgeGrab.ShimmySpeed * Time.fixedDeltaTime;
 
             if (_controller.LedgeDetector.TryGetLedgeTop(candidate, out Vector3 top))
-                _point = top;
+                _point = new Vector3(top.x, _point.y, top.z);
         }
 
         _controller.LedgeGrab.SetCachedLedge(_point, _normal);

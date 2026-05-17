@@ -7,6 +7,7 @@ public class CharacterAnimator : MonoBehaviour
 
     [SerializeField] private LayerMask _groundLayer;
     [SerializeField] private float _footOffset = 0.1f;
+    [SerializeField] private float _handSpread = 0.25f;
 
     private Animator _animator;
     private PlayerController _player;
@@ -87,16 +88,36 @@ public class CharacterAnimator : MonoBehaviour
         }
     }
 
-    private void OnAnimatorIK(int layerIndex)
+    public void RunIK(int layerIndex)
     {
-        if (_player.StateMachine.CurrentState is not GroundedState)
+        IState current = _player.StateMachine.CurrentState;
+
+        if (current is GroundedState)
+        {
+            float speed = _player.RB.linearVelocity.magnitude;
+            float ikWeight = Mathf.Clamp01(1f - speed / 2f);
+            ApplyFootIK(AvatarIKGoal.LeftFoot, ikWeight);
+            ApplyFootIK(AvatarIKGoal.RightFoot, ikWeight);
             return;
+        }
 
-        float speed = _player.RB.linearVelocity.magnitude;
-        float ikWeight = Mathf.Clamp01(1f - speed / 2f);
+        if (current is LedgeGrabState or ShimmyState)
+            ApplyLedgeHandIK(1f);
+    }
 
-        ApplyFootIK(AvatarIKGoal.LeftFoot, ikWeight);
-        ApplyFootIK(AvatarIKGoal.RightFoot, ikWeight);
+    private void ApplyLedgeHandIK(float weight)
+    {
+        Vector3 ledgePoint  = _player.LedgeGrab.CachedLedgePoint;
+        Vector3 ledgeNormal = _player.LedgeGrab.CachedLedgeNormal;
+        Vector3 shimmyDir   = _player.LedgeGrab.GetShimmyDirection(ledgeNormal);
+
+        Debug.Log($"[HandIK] applied. point={ledgePoint} normal={ledgeNormal} dir={shimmyDir} spread={_handSpread}");
+
+        _animator.SetIKPositionWeight(AvatarIKGoal.RightHand, weight);
+        _animator.SetIKPosition(AvatarIKGoal.RightHand, ledgePoint + shimmyDir * _handSpread);
+
+        _animator.SetIKPositionWeight(AvatarIKGoal.LeftHand, weight);
+        _animator.SetIKPosition(AvatarIKGoal.LeftHand, ledgePoint - shimmyDir * _handSpread);
     }
 
     private void ApplyFootIK(AvatarIKGoal foot, float weight)
