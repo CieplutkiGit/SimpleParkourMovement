@@ -112,7 +112,7 @@ public class CharacterAnimator : MonoBehaviour
             target,
             _player.RB.rotation,
             AvatarTarget.Root,
-            new MatchTargetWeightMask(Vector3.one, 0f),
+            new MatchTargetWeightMask(new Vector3(1f, 0f, 1f), 0f),
             _player.Vault.VaultMatchStart,
             _player.Vault.VaultMatchEnd);
 

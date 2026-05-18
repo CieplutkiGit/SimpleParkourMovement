@@ -1581,7 +1581,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0657e585e2a837644827e5f9e5c55790, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VaultSystem
-  _arcClearance: 0.3
+  _vaultMatchStart: 1
+  _vaultMatchEnd: 5
 --- !u!114 &810815807
 MonoBehaviour:
   m_ObjectHideFlags: 0
