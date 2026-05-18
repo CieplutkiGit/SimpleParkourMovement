@@ -139,13 +139,13 @@ public class ShimmyState : IState
         if (p < 0.5f)
         {
             float a = Mathf.SmoothStep(0f, 1f, p / 0.5f);
-            AssignRear(Vector3.Lerp(_reachFrom, _reachTo, a));
+            _rearAnchor = Vector3.Lerp(_reachFrom, _reachTo, a);
             _point = _bodyStart;
         }
         else
         {
             float b = Mathf.SmoothStep(0f, 1f, (p - 0.5f) / 0.5f);
-            AssignRear(_reachTo);
+            _rearAnchor = _reachTo;
             _point = Vector3.Lerp(_bodyStart, _bodyEnd, b);
 
             if (_cornerTurn)
@@ -170,11 +170,6 @@ public class ShimmyState : IState
         _point = _bodyEnd;
         _striding = false;
         _phase = 0f;
-    }
-
-    private void AssignRear(Vector3 pos)
-    {
-        _rearAnchor = pos;
     }
 
     private void PushAnchors()

@@ -4,6 +4,16 @@ using UnityEngine;
 public class CharacterAnimator : MonoBehaviour
 {
     private static readonly int SpeedHash = Animator.StringToHash("Speed");
+    private static readonly int LocomotionHash = Animator.StringToHash("Locomotion");
+    private static readonly int JumpHash = Animator.StringToHash("Jump");
+    private static readonly int FallHash = Animator.StringToHash("Fall");
+    private static readonly int WallRunHash = Animator.StringToHash("WallRun");
+    private static readonly int WallRunMirrorHash = Animator.StringToHash("WallRunMirror");
+    private static readonly int WallClimbUpHash = Animator.StringToHash("WallClimbUp");
+    private static readonly int HangHash = Animator.StringToHash("Hang");
+    private static readonly int ClimbUpHash = Animator.StringToHash("ClimbUp");
+    private static readonly int VaultHash = Animator.StringToHash("Vault");
+    private static readonly int ShimmyHash = Animator.StringToHash("Shimmy");
 
     private const float StateBlend = 0.15f;
     private const float FastStateBlend = 0.1f;
@@ -80,7 +90,7 @@ public class CharacterAnimator : MonoBehaviour
         if (_climbMatched || _animator.IsInTransition(0) || _animator.isMatchingTarget)
             return;
 
-        if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("ClimbUp"))
+        if (_animator.GetCurrentAnimatorStateInfo(0).shortNameHash != ClimbUpHash)
             return;
 
         Vector3 target = _player.LedgeGrab.GetClimbUpTarget(
@@ -103,7 +113,7 @@ public class CharacterAnimator : MonoBehaviour
         if (_vaultMatched || _animator.IsInTransition(0) || _animator.isMatchingTarget)
             return;
 
-        if (!_animator.GetCurrentAnimatorStateInfo(0).IsName("Vault"))
+        if (_animator.GetCurrentAnimatorStateInfo(0).shortNameHash != VaultHash)
             return;
 
         Vector3 target = _player.VaultDetector.VaultTarget + Vector3.up * _player.Movement.GroundSnapOffset;
@@ -124,29 +134,29 @@ public class CharacterAnimator : MonoBehaviour
         switch (state)
         {
             case GroundedState:
-                _animator.CrossFade("Locomotion", StateBlend);
+                _animator.CrossFade(LocomotionHash, StateBlend);
                 break;
             case AirborneState:
-                _animator.CrossFade("Jump", FastStateBlend);
+                _animator.CrossFade(JumpHash, FastStateBlend);
                 break;
             case FallingState:
-                _animator.CrossFade("Fall", StateBlend);
+                _animator.CrossFade(FallHash, StateBlend);
                 break;
             case WallRunState:
-                _animator.CrossFade(_player.WallDetector.IsWallLeft ? "WallRun" : "WallRunMirror", FastStateBlend);
+                _animator.CrossFade(_player.WallDetector.IsWallLeft ? WallRunHash : WallRunMirrorHash, FastStateBlend);
                 break;
             case WallRunUpState:
-                _animator.CrossFade("WallClimbUp", FastStateBlend);
+                _animator.CrossFade(WallClimbUpHash, FastStateBlend);
                 break;
             case LedgeGrabState:
             case ShimmyState:
-                _animator.CrossFade("Hang", StateBlend);
+                _animator.CrossFade(HangHash, StateBlend);
                 break;
             case ClimbUpState:
-                _animator.CrossFade("ClimbUp", FastStateBlend);
+                _animator.CrossFade(ClimbUpHash, FastStateBlend);
                 break;
             case VaultState:
-                _animator.CrossFade("Vault", FastStateBlend);
+                _animator.CrossFade(VaultHash, FastStateBlend);
                 break;
         }
     }
@@ -168,7 +178,7 @@ public class CharacterAnimator : MonoBehaviour
                 return;
 
             _isShimmying = moving;
-            _animator.CrossFade(moving ? "Shimmy" : "Hang", FastStateBlend);
+            _animator.CrossFade(moving ? ShimmyHash : HangHash, FastStateBlend);
         }
     }
 

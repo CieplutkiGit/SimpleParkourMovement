@@ -2,7 +2,7 @@ using UnityEngine;
 
 public static class WallRunEntry
 {
-    public static bool TryEnter(PlayerController controller)
+    public static bool TryTransition(PlayerController controller)
     {
         float forwardInput = controller.InputProvider != null ? controller.InputProvider.MoveInput.y : 0f;
 

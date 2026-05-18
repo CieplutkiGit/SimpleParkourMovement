@@ -28,7 +28,6 @@ public class GroundDetector : MonoBehaviour, IGroundDetector
         Vector3 direction = Vector3.down;
         float distance = _originOffset + _checkDistance;
 
-        // Sphere cast for grounded detection (forgiving)
         bool hitGround = Physics.SphereCast(
             origin, _sphereRadius, direction, out RaycastHit sphereHit, distance, _groundLayer);
 
@@ -45,7 +44,6 @@ public class GroundDetector : MonoBehaviour, IGroundDetector
             SlopeAngle = 0f;
         }
 
-        // Raycast for precise ground point directly beneath the player
         if (Physics.Raycast(origin, direction, out RaycastHit rayHit, distance + 1f, _groundLayer))
         {
             GroundPoint = rayHit.point;

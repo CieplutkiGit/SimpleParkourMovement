@@ -25,7 +25,7 @@ public class FallingState : IState
             return;
         }
 
-        if (WallRunEntry.TryEnter(_controller))
+        if (WallRunEntry.TryTransition(_controller))
             return;
     }
 

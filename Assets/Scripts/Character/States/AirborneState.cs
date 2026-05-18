@@ -27,7 +27,7 @@ public class AirborneState : IState
             return;
         }
 
-        if (WallRunEntry.TryEnter(_controller))
+        if (WallRunEntry.TryTransition(_controller))
             return;
 
         if (_controller.RB.linearVelocity.y < 0f && !_controller.Jump.CanCoyoteJump)
