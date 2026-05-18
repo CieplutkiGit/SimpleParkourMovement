@@ -30,10 +30,12 @@ public class CharacterAnimator : MonoBehaviour
     private Animator _animator;
     private PlayerController _player;
 
-    private IState _previousState;
     private bool _isShimmying;
     private bool _climbMatched;
     private bool _vaultMatched;
+
+    private Vector3 _rootDeltaPosition;
+    private Quaternion _rootDeltaRotation = Quaternion.identity;
 
     private void Awake()
     {
@@ -61,16 +63,29 @@ public class CharacterAnimator : MonoBehaviour
         return true;
     }
 
+    private void Start()
+    {
+        _player.StateMachine.OnStateChanged += HandleStateChanged;
+
+        if (_player.StateMachine.CurrentState != null)
+            HandleStateChanged(_player.StateMachine.CurrentState);
+    }
+
+    private void OnDestroy()
+    {
+        if (_player != null && _player.StateMachine != null)
+            _player.StateMachine.OnStateChanged -= HandleStateChanged;
+    }
+
+    private void HandleStateChanged(IState state)
+    {
+        _isShimmying = false;
+        OnStateChanged(state);
+    }
+
     private void Update()
     {
         IState current = _player.StateMachine.CurrentState;
-
-        if (current != _previousState)
-        {
-            _isShimmying = false;
-            OnStateChanged(current);
-            _previousState = current;
-        }
 
         UpdateContinuous(current);
 
@@ -189,8 +204,26 @@ public class CharacterAnimator : MonoBehaviour
         if (current is not ClimbUpState && current is not VaultState)
             return;
 
-        _player.RB.MovePosition(_player.RB.position + _animator.deltaPosition);
-        _player.RB.MoveRotation(_animator.deltaRotation * _player.RB.rotation);
+        _rootDeltaPosition += _animator.deltaPosition;
+        _rootDeltaRotation = _animator.deltaRotation * _rootDeltaRotation;
+    }
+
+    private void FixedUpdate()
+    {
+        IState current = _player.StateMachine.CurrentState;
+
+        if (current is not ClimbUpState && current is not VaultState)
+        {
+            _rootDeltaPosition = Vector3.zero;
+            _rootDeltaRotation = Quaternion.identity;
+            return;
+        }
+
+        _player.RB.MovePosition(_player.RB.position + _rootDeltaPosition);
+        _player.RB.MoveRotation(_rootDeltaRotation * _player.RB.rotation);
+
+        _rootDeltaPosition = Vector3.zero;
+        _rootDeltaRotation = Quaternion.identity;
     }
 
     public void RunIK(int layerIndex)
