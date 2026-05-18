@@ -83,7 +83,7 @@ public class MovementSystem : MonoBehaviour
         forward.Normalize();
         right.Normalize();
 
-        return forward * _input.MoveInput.y + right * _input.MoveInput.x;
+        return (forward * _input.MoveInput.y + right * _input.MoveInput.x).normalized;
     }
 
     private void SnapToGround()
