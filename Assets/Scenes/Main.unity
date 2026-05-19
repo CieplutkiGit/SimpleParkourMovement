@@ -1600,9 +1600,9 @@ MonoBehaviour:
   - {fileID: 361643175}
   - {fileID: 1678784906}
   _material: {fileID: 2100000, guid: 491a659262e29c84abf125575e825d6f, type: 2}
-  _width: 0.6
-  _widthSegments: 4
-  _segmentsPerBone: 3
+  _width: 0.1
+  _widthSegments: 8
+  _segmentsPerBone: 6
 --- !u!137 &792496861
 SkinnedMeshRenderer:
   m_ObjectHideFlags: 0
