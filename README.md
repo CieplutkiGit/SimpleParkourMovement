@@ -28,9 +28,6 @@ Ongoing - project not finished but enough code for review.
 - Velocity-gated impact FX (land dust, wall scuff, vault burst)
 - Speed-reactive wind audio (no audio yet)
 
-## Demo
-
-Video coming one day.
 
 ## Controls
 
