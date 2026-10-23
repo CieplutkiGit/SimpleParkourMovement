@@ -193,6 +193,25 @@ public static class HeadwearAssetBaker
                 farRenderers.Add(renderer);
             }
 
+            if (farRenderers.Count == 0)
+            {
+                // Some OBJ import settings combine all material groups into a
+                // single mesh. Fall back to a valid (albeit expensive) second LOD
+                // instead of making the whole headwear disappear at distance.
+                foreach (MeshRenderer original in fullRenderers)
+                {
+                    GameObject part = new GameObject(original.name + "_LOD1");
+                    part.transform.SetParent(lodRoot.transform, false);
+                    part.AddComponent<MeshFilter>().sharedMesh = original.GetComponent<MeshFilter>().sharedMesh;
+                    MeshRenderer renderer = part.AddComponent<MeshRenderer>();
+                    renderer.sharedMaterials = original.sharedMaterials;
+                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    farRenderers.Add(renderer);
+                }
+                Debug.LogWarning("Headwear baker: OBJ importer combined its groups. LOD1 retains full geometry for " +
+                                 name + ". Split objects into distinct Blender mesh objects for real triangle reduction.");
+            }
+
             LODGroup lod = root.AddComponent<LODGroup>();
             lod.SetLODs(new[]
             {
