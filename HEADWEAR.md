@@ -52,6 +52,12 @@ meshes:
   triangles, outer shell, lining, rolled face rim, structural seams
 - `Assets/Art/Headwear/Source/HeadwearMaterials.mtl` — simple placeholder
   OBJ preview colors (not final PBR authoring)
+- `Assets/Art/Headwear/Source/Textures/Fabric_Weave_Albedo.png` — committed
+  256x256 repeatable fabric albedo map
+- `Assets/Art/Headwear/Source/Textures/Fabric_Weave_Normal.png` — committed
+  256x256 woven surface normals, imported as a normal map
+- `Assets/Art/Headwear/Source/Textures/Fabric_Weave_Occlusion.png` — committed
+  256x256 small-scale crevice shading map
 
 Source meshes were checked for invalid face indices and degenerate triangles.
 They can be imported into Blender for artist retopology/UV work; their current
@@ -63,7 +69,8 @@ asset. The hood OBJ is **not** weight painted.
 
 1. Imports the OBJ models as editable source and creates persistent native
    mesh assets in `Assets/Art/Headwear/Baked`.
-2. Generates 512x512 weave albedo and normal maps with repeat/mipmaps.
+2. Uses the committed repeatable weave albedo, normal and occlusion maps
+   (with deterministic generated textures as a fallback).
 3. Creates three URP Lit materials (fabric, rubberized trim, accent) and
    assigns them by OBJ material and mesh-group names.
 4. Creates cap/hood prefabs with full-detail LOD0 and a simplified LOD1
@@ -74,8 +81,9 @@ asset. The hood OBJ is **not** weight painted.
 The bake can be repeated without intentionally changing existing mesh/material
 asset GUIDs. When OBJ geometry is imported as a single combined mesh, a fallback
 LOD preserves visibility; actual triangle reduction requires splitting the
-source into distinct parts. All generated textures/materials are in the baked
-folder, not source control until an artist chooses to commit them.
+source into distinct parts. The source PNGs and OBJ meshes are committed. Native Unity mesh assets,
+materials and prefabs are generated into the baked folder and should be
+committed once visually reviewed in the Editor.
 
 For non-Unity inspection, you can run:
 `python3 tools/validate_headwear_assets.py`
