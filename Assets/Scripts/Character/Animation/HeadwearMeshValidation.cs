@@ -34,6 +34,17 @@ public static class HeadwearMeshValidation
             hood.SetParent(root.transform, false);
             ProceduralHeadwearMeshes.BuildRaisedHood(hood, fabric, fabric, fabric, meshes);
 
+            // Test the non-baked fallback path as well: it must collapse into a
+            // small number of material-batched renderers before the strap is added.
+            ProceduralHeadwearMeshes.BatchStaticParts(cap, meshes);
+            ProceduralHeadwearMeshes.BatchStaticParts(hood, meshes);
+            if (cap.GetComponentsInChildren<MeshRenderer>(true).Length > 3 ||
+                hood.GetComponentsInChildren<MeshRenderer>(true).Length > 3)
+            {
+                Debug.LogError("Headwear validation: fallback assets exceed three static renderers per view.");
+                valid = false;
+            }
+
             // Instantiate the real strap component in a disposable editor hierarchy.
             // Its generated mesh is checked by the same attribute/triangle validation.
             Transform strapRoot = new GameObject("strap simulation smoke test").transform;
