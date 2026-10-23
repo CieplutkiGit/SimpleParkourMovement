@@ -96,6 +96,27 @@ model-root space on spawn and then parented to the live head bone. This avoids
 assuming Mixamo's head bone local axes match the character's forward axis.
 If the Y Bot's imported forward axis differs, tune Cap/Hood Euler in Inspector.
 
+## Unity 6 compile, import and rig verification
+
+This is separate from the green Python/GitHub static checks. Use the
+**Tools > Parkour > Run Unity Headwear Smoke Test** menu command, or run
+Unity 6 Editor with these command-line arguments:
+
+```text
+-batchmode -nographics -projectPath /path/to/SimpleParkourMovement -executeMethod HeadwearBatchSmokeTest.RunBatch -quit -logFile headwear-unity.log
+```
+
+The batch test returns **exit code 1** on failure and logs the reason.
+It builds the OBJ-based prefabs, validates their persistent Mesh assets,
+URP/Lit albedo/normal maps and distance LODs, opens Main.unity, verifies
+HeadwearController and the Mixamo head bone, and checks the attachment
+orientation and finite renderer bounds. The test may generate assets
+under `Assets/Art/Headwear/Baked`; review and commit them after Unity
+visual validation.
+
+This is not an actual Play Mode stress test. An engine session with
+animation, collisions and frame profiling remains mandatory.
+
 ## AAA acceptance criteria (must be checked in a real engine session)
 
 - [ ] Unity 6 import succeeds with no C# compile errors and no broken references
