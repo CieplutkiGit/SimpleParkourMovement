@@ -1,78 +1,113 @@
-# Headwear prototype: technical cap / raised hood
+# Headwear feature branch: game-ready foundations, NOT a finished AAA outfit
 
-Branch: `feature/aaa-headwear-prototype`. Scene: `Assets/Scenes/Main.unity`.
+Branch: `feature/aaa-headwear-prototype`
+Scene: `Assets/Scenes/Main.unity`
 
-This is a **playable, non-destructive prototype**, not a photoreal finished hoodie
-model. The actual production solution should use high-quality authored Blender /
-Marvelous Designer meshes, baked textures and rigged garments. Generated fallback
-geometry allows the attachment and switching architecture to work immediately
-without committing arbitrary binary FBX assets.
+## What runs today
 
-## Try it
+- `HeadwearController` resolves the Y Bot Humanoid head socket and owns the
+  cap/hood/scarf/bare cosmetic states. Styles are switched via the H key (for
+  development) or `SetStyle` from a cosmetics menu.
+- The default **Technical Cap** is a procedural test mesh: a multi-panel crown,
+  rolled lower band, curved reinforced brim, panel seams, top button,
+  embroidery-like detail, and rear attachment. This is *not* finished art.
+- `HeadwearStrapDynamics` simulates the small cap adjustment tail, not the
+  rigid crown. It uses a constrained segmented ribbon, bounded substeps,
+  per-segment lengths, damping, gravity, global WindSO, head-sphere collision,
+  rest-pose pull and reset on large head transforms. The mesh follows the
+  simulation. WindWake is ordered before the strap update.
+- The **Raised Hood** default is a procedural lined shell with open face.
+  It is a fit/proportions placeholder, not a rigged full hoodie.
+- `HeadwearSkinnedGarmentBinding` supports replacing the placeholder with
+  a *properly authored* skinned hood/garment exported against the same exact
+  Y Bot rest pose. It remaps mesh bone names to the animated skeleton, checks
+  missing bones up front and rejects incomplete remappings.
+- The original scarf geometry and spring code remain. Re-enabling the scarf
+  resets the spring simulation to avoid stale-velocity bursts.
 
-1. Open `Assets/Scenes/Main.unity` in Unity 6 (URP 17), then press Play.
-2. The Player's `HeadwearController` automatically resolves the Y Bot Humanoid
-   `mixamorig:Head` bone (and can fall back to the transform name).
-3. **Technical Cap** is the startup mode. The original procedural scarf and
-   its spring simulation are hidden, not deleted.
-4. Press **H** to cycle: Original Scarf -> Technical Cap -> Raised Hood -> Bare.
-   (From the default cap, the first press selects Raised Hood.)
-5. Test standing, sprinting, jumping, wall-running, vaulting, ledge grabs and
-   climbing. The attachments follow the animated head bone, independent of the
-   parkour state machine.
+## Play and validate
 
-The procedural cap contains a six-panel curved crown, stitched panel seams, a
-reinforced dimensional brim, a lower band, front chevron and rear adjustment
-detail. The hood has an open face, inner lining, a rolled opening edge and
-structural seams. Neither headwear mesh runs cloth simulation: structurally
-rigid cap/hood regions should primarily follow skeletal animation.
+1. Open the **feature branch** in Unity **6 / URP 17**.
+2. Open `Assets/Scenes/Main.unity` and press Play. The player should spawn
+   wearing the charcoal prototype cap with a small reacting rear strap.
+3. Cycle **H**: Technical Cap -> Raised Hood -> Bare -> Original Scarf -> Cap.
+4. Menu: **Tools > Parkour > Validate Headwear Geometry**. This editor tool
+   builds the cap, hood and dynamic strap in a disposable hierarchy and checks
+   vertex data, triangles, bounds, degeneracy, and the head bone in Main.
+5. Inspect the character in Play Mode while sprinting, jumping, vaulting,
+   wall-running, landing, grabbing, shimmying and climbing. Check for clipping,
+   material issues, head offset/rotation, strap popping, and no motion changes.
+6. Switch back to the scarf after several seconds of motion. It should re-seed
+   rather than lurch from stale spring positions.
 
-## Fit and customization
+## How to replace prototype art with an actual high-end cap
 
-The `HeadwearController` is a component on Player in Main.unity. You can
-fine-tune `Cap Offset`, `Cap Euler`, `Hood Offset` and `Hood Euler` in
-the Inspector if your Y Bot avatar's head-bone orientation differs.
+A *cap* should not behave as loose cloth. Rig the rigid cap (crown + reinforced
+brim) to the head bone with **no general-purpose cloth simulation**. Give it a
+proper silhouette, panel structure, high-poly sculpt / normals, roughness,
+weave texture, stitch maps and fitted UVs.
 
-Production replacement: create a cap and/or hood prefab using real textured
-meshes. Assign them to `Cap Prefab` and `Hood Prefab`. The controller
-instantiates the prefab under the head bone instead of procedural geometry.
-Set the prefab's local origin to its cap/hood pivot, and tune offsets if needed.
-The materials slots `Fabric`, `Trim`, `Accent` are for the procedural
-fallback; prefab materials remain authored on their MeshRenderers.
+- Make one cap prefab with `MeshRenderer`/authored meshes.
+- Use Y Bot's head transform as the coordinate/fit reference. The cap's origin
+  is attached to the head; set the exact fit with the `HeadwearController`
+  `Cap Offset` and `Cap Euler` fields in the Inspector.
+- Assign the prefab to `Cap Prefab`. A custom static prefab replaces
+  *all* procedural cap geometry and its procedural adjustment tail. Add your
+  own `HeadwearStrapDynamics` on a tail transform in the prefab if you want
+  physical secondary motion. Configure it from your prefab logic or adapt
+  its public `Configure` call.
+- For texture detail, use baked normal/height maps, trim detail, subtle albedo
+  variation and calibrated fabric roughness. Use URP/Lit or custom cloth BRDF.
+- Build LODs and a simplified version for distance. Avoid shadows/collision
+  on tiny strips when they occupy only a few pixels.
 
-A **full hoodie** requires a separate torso/sleeve skinned mesh and proper
-weight painting, with animation-driven corrective shapes and carefully limited
-simulation on loose pieces. Simply attaching a hood to the head cannot replace
-a properly modeled and rigged jacket.
+## How to replace the hood with a REAL skinned garment
 
-## Validation and regression checklist
+A hood attached to the head as a *rigid* object will clip during extreme poses.
+For a proper hood/hoodie:
 
-Use **Tools > Parkour > Validate Headwear Geometry** to run the editor geometry
-checker. It builds both variants in a temporary hierarchy and verifies vertex
-attributes, bounds, indices and degenerate triangles. No scene is modified.
+1. Export the project's **original Y Bot reference rig in rest pose** to
+   Blender/Maya/Marvelous Designer. Model torso/sleeves/hood on top.
+2. Skin shoulder, chest, neck and hood portions to the appropriate Y Bot
+   transforms. A hood that should follow the head must blend the head,
+   neck and upper-spine weights. Do not rely on rigid head mounting.
+3. Export a prefab with an `SkinnedMeshRenderer` bound to the identical
+   rest skeleton. Keep scale/pivot consistent with the original model rig.
+4. Assign this prefab to `Hood Prefab`. The controller recognizes a
+   `SkinnedMeshRenderer`, places the prefab under the Animator model root,
+   and calls `HeadwearSkinnedGarmentBinding` to map the bones. If remapping
+   fails it logs errors and falls back to procedural geometry.
+5. Test bindposes before animation! Matching names are *not enough* if the
+   prefab was exported from a different body/proportions/rest pose.
+6. Add a small amount of separate simulation only to loose hems/drawstrings.
+   Author corrective shapes for major shoulder and neck motion.
+7. Check all existing parkour clips, especially overhead reaches, ledge
+   hang, sharp wall-run transitions, and vaults; fix skin weights/shape keys.
 
-- [ ] Press Play with default cap: no missing avatar, pink materials or errors.
-- [ ] Inspect the cap from front, side, rear: crown, curved brim, closure visible.
-- [ ] Press H repeatedly: exactly one style active; scarf restored when selected.
-- [ ] After moving for several seconds in cap/hood, switch to scarf; ensure no
-      physics snap from stale simulated positions.
-- [ ] Sprint, jump, vault, run along/up walls, grab/shimmy/climb ledges in both
-      new headwear modes; character movement must remain unchanged.
-- [ ] Check face and shoulder intersections at extreme head/torso rotations;
-      adjust offsets or replace prototype hood with a rigged garment.
-- [ ] Test with custom URP materials and with prefab replacements.
+This bone-rebinding integration is an art pipeline feature, **not** a system
+that magically fits any hoodie mesh onto any body.
 
-## Known limitations
+## Technical files
 
-- This prototype deliberately has no torso/sleeve clothing or cloth-self
-  collision, LODs, texture maps, or baked fabric normal details.
-- The raised hood follows the head rigidly and may intersect shoulders during
-  extreme turns. AAA-quality hood/neck deformations require torso/head
-  weight blending, corrective shapes and authored rigging.
-- No Unity Editor or player build is available to the remote code author.
-  Repository-level static checks do **not** substitute for the Play Mode
-  and validation steps above.
+| File | Role |
+| --- | --- |
+| `HeadwearController.cs` | Cosmetic slots, state switches and prefab selection |
+| `ProceduralHeadwearMeshes.cs` | Prototype generated mesh and accents |
+| `HeadwearStrapDynamics.cs` | PBD-style strap motion, collision and mesh deformation |
+| `HeadwearSkinnedGarmentBinding.cs` | Production mesh skeleton mapping |
+| `HeadwearMeshValidation.cs` | Editor geometry + bone smoke checker |
+| `SpringChain.cs` | Original scarf solver, with reset hook |
+| `WindWake.cs` | Ordered wind sampling for motion simulation |
+| `Main.unity` | Player headwear component, existing WindSO assigned |
 
-Existing `SpringChain`/scarf is preserved; a public `ResetSimulation` function
-is called when returning to it after a period of inactivity to prevent
-outdated spring positions from jerking on re-enable.
+## Remaining work and non-claims
+
+**Not shipped:** An artist-authored textured AAA cap, fully skinned hoodie
+asset, fabric normal/roughness maps, LOD chain, full-body garment collision,
+animated wrinkle correctives, professional skinning, or tested Play Mode
+recordings/builds. These cannot be replaced by more C# scripts.
+
+This remote implementation was reviewed at the source/scene level, but
+**no Unity Editor, compiler, or graphics/runtime test is available in this
+environment**. The project must compile and be visually checked in Unity
+before it is considered complete.
