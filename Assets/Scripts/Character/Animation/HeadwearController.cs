@@ -104,7 +104,7 @@ public sealed class HeadwearController : MonoBehaviour
                 tail.transform.SetParent(_capView.transform, false);
                 tail.transform.localPosition = new Vector3(0.06f, -0.018f, -0.187f);
                 tail.AddComponent<HeadwearStrapDynamics>().Configure(
-                    tail.transform, _head, GetComponent<Rigidbody>(), _wind, trim);
+                    tail.transform, _head, _wind, trim);
             }
         }
 
