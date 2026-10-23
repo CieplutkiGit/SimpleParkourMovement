@@ -36,6 +36,10 @@ public sealed class HeadwearController : MonoBehaviour
     [SerializeField] private Material _trim;
     [SerializeField] private Material _accent;
 
+    [Header("Secondary motion")]
+    [SerializeField] private bool _simulateAdjustmentTail = true;
+    [SerializeField] private WindSO _wind;
+
     [Header("Development")]
     [SerializeField] private bool _allowHKeyCycle = true;
 
@@ -89,14 +93,24 @@ public sealed class HeadwearController : MonoBehaviour
         Material trim = _trim != null ? _trim : CreateMaterial("Headwear graphite trim", new Color(0.018f, 0.025f, 0.032f), 0.28f);
         Material accent = _accent != null ? _accent : CreateMaterial("Headwear muted orange detail", new Color(0.93f, 0.28f, 0.075f), 0.23f);
 
-        _capView = CreateView(_capPrefab, _head, "Technical Cap", _capOffset, _capEuler);
-        if (_capPrefab == null)
+        _capView = CreateWearable(_capPrefab, "Technical Cap", _capOffset, _capEuler);
+        if (_capPrefab == null || _capView.GetComponentInChildren<SkinnedMeshRenderer>(true) == null && _capView.transform.parent == _head && _capView.transform.childCount == 0)
+        {
             ProceduralHeadwearMeshes.BuildTechnicalCap(_capView.transform, fabric, trim, accent, _generatedMeshes);
+            if (_simulateAdjustmentTail)
+            {
+                GameObject tail = new GameObject("Simulated adjustment strap");
+                tail.transform.SetParent(_capView.transform, false);
+                tail.transform.localPosition = new Vector3(0.06f, -0.018f, -0.187f);
+                tail.AddComponent<HeadwearStrapDynamics>().Configure(
+                    tail.transform, _head, GetComponent<Rigidbody>(), _wind, trim);
+            }
+        }
 
-        // The raised hood is anchored to the head. Its bottom is deliberately spacious
-        // to allow turns; an authored full hoodie should instead be skinned to the torso.
-        _hoodView = CreateView(_hoodPrefab, _head, "Raised Hood", _hoodOffset, _hoodEuler);
-        if (_hoodPrefab == null)
+        // A skinned hood prefab binds to the whole Y Bot skeleton, not the head socket.
+        // A non-skinned prefab stays rigid; procedural fallback remains available.
+        _hoodView = CreateWearable(_hoodPrefab, "Raised Hood", _hoodOffset, _hoodEuler);
+        if (_hoodPrefab == null || _hoodView.GetComponentInChildren<SkinnedMeshRenderer>(true) == null && _hoodView.transform.parent == _head && _hoodView.transform.childCount == 0)
             ProceduralHeadwearMeshes.BuildRaisedHood(_hoodView.transform, fabric, trim, accent, _generatedMeshes);
 
         SetStyle(_initialStyle);
@@ -120,6 +134,31 @@ public sealed class HeadwearController : MonoBehaviour
         }
 
         return null;
+    }
+
+    private GameObject CreateWearable(GameObject prefab, string objectName, Vector3 offset, Vector3 euler)
+    {
+        if (prefab != null && prefab.GetComponentInChildren<SkinnedMeshRenderer>(true) != null)
+        {
+            // Garments must be exported against the EXACT same Y Bot rest skeleton.
+            // They must be positioned relative to the Animator model root, not its head.
+            GameObject skinned = Instantiate(prefab, _animator.transform, false);
+            skinned.name = objectName;
+            HeadwearSkinnedGarmentBinding binder = skinned.GetComponent<HeadwearSkinnedGarmentBinding>();
+            if (binder == null)
+                binder = skinned.AddComponent<HeadwearSkinnedGarmentBinding>();
+
+            if (binder.BindTo(_animator))
+                return skinned;
+
+            // Fail safely: do not display partially mapped, exploding geometry.
+            Debug.LogError("Headwear: Skinned prefab failed Y Bot remapping, using generated prototype instead.", this);
+            skinned.SetActive(false);
+            Destroy(skinned);
+            return CreateView(null, _head, objectName, offset, euler);
+        }
+
+        return CreateView(prefab, _head, objectName, offset, euler);
     }
 
     private static GameObject CreateView(GameObject prefab, Transform parent, string objectName, Vector3 offset, Vector3 euler)
