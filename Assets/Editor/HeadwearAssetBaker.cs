@@ -88,15 +88,15 @@ public static class HeadwearAssetBaker
                   ". Save the scene to persist these references.");
     }
 
+    // Mesh.CombineMeshes is run in the Editor only. Instead of shipping one
+    // renderer per tiny seam or eyelet, bake into at most 3 material batches
+    // per LOD. Source OBJ remains untouched and fully editable in Blender.
     private static void BuildPrefab(string name, Material fabric, Material trim, Material accent, bool isCap)
     {
         GameObject root = new GameObject(name);
         List<Mesh> temporary = new List<Mesh>();
-
         try
         {
-            // Prefer real, editable OBJ source committed to the repository.
-            // Fallback generator remains available if the source is not imported.
             string sourcePath = "Assets/Art/Headwear/Source/" + name + ".obj";
             GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
             if (source != null)
@@ -111,15 +111,15 @@ public static class HeadwearAssetBaker
                     Material[] materials = renderer.sharedMaterials;
                     for (int i = 0; i < materials.Length; i++)
                     {
-                        string key = (materials[i] != null ? materials[i].name : "") +
-                                     "_" + renderer.gameObject.name;
-                        key = key.ToUpperInvariant();
-                        if (key.Contains("ACCENT") || key.Contains("STITCH") || key.Contains("MARK") || key.Contains("DART"))
+                        string key = ((materials[i] != null ? materials[i].name : "") +
+                            "_" + renderer.gameObject.name).ToUpperInvariant();
+                        if (key.Contains("ACCENT") || key.Contains("STITCH") ||
+                            key.Contains("MARK") || key.Contains("DART"))
                             materials[i] = accent;
                         else if (key.Contains("TRIM") || key.Contains("BRIM") ||
                                  key.Contains("BAND") || key.Contains("EYELET") ||
-                                 key.Contains("SEAM") || key.Contains("INNER") || key.Contains("BUTTON") ||
-                                 key.Contains("BACK_ADJUSTER"))
+                                 key.Contains("SEAM") || key.Contains("INNER") ||
+                                 key.Contains("BUTTON") || key.Contains("BACK_ADJUSTER"))
                             materials[i] = trim;
                         else
                             materials[i] = fabric;
@@ -132,109 +132,96 @@ public static class HeadwearAssetBaker
             else
                 ProceduralHeadwearMeshes.BuildRaisedHood(root.transform, fabric, trim, accent, temporary);
 
-            MeshRenderer[] fullRenderers = root.GetComponentsInChildren<MeshRenderer>(true);
-            if (fullRenderers.Length == 0)
-                throw new InvalidOperationException("Imported headwear source contained no renderers: " + sourcePath);
+            // Snapshot before creating output LODs; excludes the generated renderers.
+            MeshRenderer[] authoredRenderers = root.GetComponentsInChildren<MeshRenderer>(true);
+            if (authoredRenderers.Length == 0)
+                throw new InvalidOperationException("Headwear source has no renderers: " + sourcePath);
 
-            HashSet<string> usedMeshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (MeshRenderer renderer in fullRenderers)
+            Material[] palette = { fabric, trim, accent };
+            List<CombineInstance>[] lod0 = NewBuckets(palette.Length);
+            List<CombineInstance>[] lod1 = NewBuckets(palette.Length);
+            bool hasSelectedFarParts = false;
+
+            foreach (MeshRenderer renderer in authoredRenderers)
             {
                 MeshFilter filter = renderer.GetComponent<MeshFilter>();
                 if (filter == null || filter.sharedMesh == null)
-                    throw new InvalidOperationException("Headwear mesh part is missing its MeshFilter: " + renderer.name);
+                    throw new InvalidOperationException("Headwear source missing MeshFilter: " + renderer.name);
 
-                string basePath = Folder + "/" + name + "_" + SafeName(renderer.name);
-                string path = basePath + ".asset";
-                int duplicate = 2;
-                while (!usedMeshPaths.Add(path))
-                    path = basePath + "_" + duplicate++ + ".asset";
+                Mesh mesh = filter.sharedMesh;
+                Matrix4x4 toRoot = root.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                Material[] materialSlots = renderer.sharedMaterials;
+                bool keepFar = IsSilhouettePiece(renderer.name, isCap);
 
-                Mesh oldAsset = AssetDatabase.LoadAssetAtPath<Mesh>(path);
-                Mesh copy = UnityEngine.Object.Instantiate(filter.sharedMesh);
-                copy.name = name + "_" + renderer.name;
-                if (oldAsset == null)
+                for (int submesh = 0; submesh < mesh.subMeshCount; submesh++)
                 {
-                    AssetDatabase.CreateAsset(copy, path);
-                    filter.sharedMesh = copy;
-                }
-                else
-                {
-                    // Preserve the original GUID so prefab links survive rebaking.
-                    oldAsset.Clear();
-                    oldAsset.indexFormat = copy.indexFormat;
-                    oldAsset.vertices = copy.vertices;
-                    oldAsset.uv = copy.uv;
-                    oldAsset.normals = copy.normals;
-                    oldAsset.tangents = copy.tangents;
-                    oldAsset.subMeshCount = copy.subMeshCount;
-                    for (int submesh = 0; submesh < copy.subMeshCount; submesh++)
-                        oldAsset.SetTriangles(copy.GetTriangles(submesh), submesh);
-                    oldAsset.RecalculateBounds();
-                    EditorUtility.SetDirty(oldAsset);
-                    filter.sharedMesh = oldAsset;
-                    UnityEngine.Object.DestroyImmediate(copy);
+                    // A missing material slot is a source asset bug, not a reason
+                    // to silently discard thousands of triangles.
+                    if (submesh >= materialSlots.Length)
+                        throw new InvalidOperationException("Not enough material slots: " + renderer.name);
+                    Material material = materialSlots[submesh];
+                    int bucket = Array.IndexOf(palette, material);
+                    if (bucket < 0)
+                        throw new InvalidOperationException("Unsupported material in " + renderer.name);
+                    CombineInstance ci = new CombineInstance
+                    {
+                        mesh = mesh, subMeshIndex = submesh, transform = toRoot
+                    };
+                    lod0[bucket].Add(ci);
+                    if (keepFar)
+                    {
+                        lod1[bucket].Add(ci);
+                        hasSelectedFarParts = true;
+                    }
                 }
             }
 
-            // Simplified visual LOD: reuse crown/brim on the cap, shell/lining
-            // on the hood and omit small seams and embroidery at distance.
-            GameObject lodRoot = new GameObject("LOD1");
-            lodRoot.transform.SetParent(root.transform, false);
-            List<Renderer> farRenderers = new List<Renderer>();
-
-            foreach (MeshRenderer original in fullRenderers)
+            // If the OBJ importer merges every group into one renderer, preserve
+            // the geometry rather than making the distant cap invisible.
+            if (!hasSelectedFarParts)
             {
-                string partName = original.name;
-                string key = partName.ToLowerInvariant();
-                bool keep = isCap
-                    ? key.Contains("crown") || key.Contains("brim") ||
-                      key.Contains("lower_band") || key.Contains("lower band")
-                    : key.Contains("outer") || key.Contains("inner");
-                if (!keep)
-                    continue;
-
-                GameObject part = new GameObject(partName + "_LOD1");
-                part.transform.SetParent(lodRoot.transform, false);
-                MeshFilter filter = part.AddComponent<MeshFilter>();
-                filter.sharedMesh = original.GetComponent<MeshFilter>().sharedMesh;
-                MeshRenderer renderer = part.AddComponent<MeshRenderer>();
-                renderer.sharedMaterials = original.sharedMaterials;
-                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                farRenderers.Add(renderer);
+                for (int i = 0; i < palette.Length; i++)
+                    lod1[i].AddRange(lod0[i]);
+                Debug.LogWarning(name + ": OBJ parts merged by importer; LOD1 currently uses full mesh. " +
+                                 "Split the source into objects for silhouette-only LOD.");
             }
 
-            if (farRenderers.Count == 0)
+            GameObject near = new GameObject("LOD0");
+            near.transform.SetParent(root.transform, false);
+            GameObject far = new GameObject("LOD1");
+            far.transform.SetParent(root.transform, false);
+            Renderer[] nearRenderers = BakeBatches(name, "LOD0", near.transform, lod0, palette, true);
+            Renderer[] farRenderers = BakeBatches(name, "LOD1", far.transform, lod1, palette, false);
+            if (nearRenderers.Length == 0 || farRenderers.Length == 0)
+                throw new InvalidOperationException("Baked headwear LODs have no visible renderers.");
+
+            // Source meshes are not part of the final prefab: otherwise they
+            // would render *in addition* to the combined geometry.
+            for (int i = authoredRenderers.Length - 1; i >= 0; i--)
+                authoredRenderers[i].enabled = false;
+            for (int i = root.transform.childCount - 1; i >= 0; i--)
             {
-                // Some OBJ import settings combine all material groups into a
-                // single mesh. Fall back to a valid (albeit expensive) second LOD
-                // instead of making the whole headwear disappear at distance.
-                foreach (MeshRenderer original in fullRenderers)
-                {
-                    GameObject part = new GameObject(original.name + "_LOD1");
-                    part.transform.SetParent(lodRoot.transform, false);
-                    part.AddComponent<MeshFilter>().sharedMesh = original.GetComponent<MeshFilter>().sharedMesh;
-                    MeshRenderer renderer = part.AddComponent<MeshRenderer>();
-                    renderer.sharedMaterials = original.sharedMaterials;
-                    renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                    farRenderers.Add(renderer);
-                }
-                Debug.LogWarning("Headwear baker: OBJ importer combined its groups. LOD1 retains full geometry for " +
-                                 name + ". Split objects into distinct Blender mesh objects for real triangle reduction.");
+                Transform child = root.transform.GetChild(i);
+                if (child != near.transform && child != far.transform)
+                    UnityEngine.Object.DestroyImmediate(child.gameObject);
             }
 
             LODGroup lod = root.AddComponent<LODGroup>();
+            lod.fadeMode = LODFadeMode.None; // No double-draw during transitions.
             lod.SetLODs(new[]
             {
-                new LOD(0.35f, Array.ConvertAll<MeshRenderer, Renderer>(fullRenderers, item => item)),
-                new LOD(0.08f, farRenderers.ToArray())
+                new LOD(0.35f, nearRenderers),
+                new LOD(0.025f, farRenderers)
             });
             lod.RecalculateBounds();
 
             string prefabPath = Folder + "/" + name + ".prefab";
-            // Saving to the same prefab path preserves its GUID on rebake.
             GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             if (saved == null)
-                throw new InvalidOperationException("Failed to save " + prefabPath);
+                throw new InvalidOperationException("Could not write headwear prefab: " + prefabPath);
+
+            Debug.Log(name + " draw calls: LOD0=" + nearRenderers.Length +
+                      " LOD1=" + farRenderers.Length + " (one renderer per material).");
         }
         finally
         {
@@ -243,6 +230,66 @@ public static class HeadwearAssetBaker
                 if (mesh != null)
                     UnityEngine.Object.DestroyImmediate(mesh);
         }
+    }
+
+    private static List<CombineInstance>[] NewBuckets(int length)
+    {
+        List<CombineInstance>[] buckets = new List<CombineInstance>[length];
+        for (int i = 0; i < buckets.Length; i++)
+            buckets[i] = new List<CombineInstance>();
+        return buckets;
+    }
+
+    private static bool IsSilhouettePiece(string name, bool isCap)
+    {
+        string key = name.ToLowerInvariant();
+        return isCap
+            ? key.Contains("crown") || key.Contains("brim") || key.Contains("lower_band") ||
+              key.Contains("lower band") || key.Contains("visor") && !key.Contains("stitch")
+            : key.Contains("outer") || key.Contains("inner") || key.Contains("shell") ||
+              key.Contains("lining");
+    }
+
+    private static Renderer[] BakeBatches(string name, string lodName, Transform parent,
+                                          List<CombineInstance>[] batches, Material[] materials,
+                                          bool castShadows)
+    {
+        List<Renderer> renderers = new List<Renderer>();
+        for (int i = 0; i < materials.Length; i++)
+        {
+            if (batches[i].Count == 0)
+                continue;
+
+            Mesh mesh = new Mesh { name = name + "_" + lodName + "_Batch" + i };
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mesh.CombineMeshes(batches[i].ToArray(), true, true, false);
+
+            // Stable asset paths/GUIDs: re-baking cannot break prefab references.
+            string path = Folder + "/" + mesh.name + ".asset";
+            Mesh existing = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+            if (existing != null)
+            {
+                EditorUtility.CopySerialized(mesh, existing);
+                existing.RecalculateBounds();
+                EditorUtility.SetDirty(existing);
+                UnityEngine.Object.DestroyImmediate(mesh);
+                mesh = existing;
+            }
+            else
+                AssetDatabase.CreateAsset(mesh, path);
+
+            GameObject part = new GameObject("Batch" + i);
+            part.transform.SetParent(parent, false);
+            part.AddComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = part.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = materials[i];
+            renderer.shadowCastingMode = castShadows
+                ? UnityEngine.Rendering.ShadowCastingMode.On
+                : UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = castShadows;
+            renderers.Add(renderer);
+        }
+        return renderers.ToArray();
     }
 
     private static Material MakeMaterial(Shader shader, string name, Color tint, Texture2D baseMap,
