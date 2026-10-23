@@ -93,8 +93,9 @@ public sealed class HeadwearController : MonoBehaviour
         Material trim = _trim != null ? _trim : CreateMaterial("Headwear graphite trim", new Color(0.018f, 0.025f, 0.032f), 0.28f);
         Material accent = _accent != null ? _accent : CreateMaterial("Headwear muted orange detail", new Color(0.93f, 0.28f, 0.075f), 0.23f);
 
-        _capView = CreateWearable(_capPrefab, "Technical Cap", _capOffset, _capEuler);
-        if (_capPrefab == null || _capView.GetComponentInChildren<SkinnedMeshRenderer>(true) == null && _capView.transform.parent == _head && _capView.transform.childCount == 0)
+        bool capFallback;
+        _capView = CreateWearable(_capPrefab, "Technical Cap", _capOffset, _capEuler, out capFallback);
+        if (capFallback)
         {
             ProceduralHeadwearMeshes.BuildTechnicalCap(_capView.transform, fabric, trim, accent, _generatedMeshes);
             if (_simulateAdjustmentTail)
@@ -109,8 +110,9 @@ public sealed class HeadwearController : MonoBehaviour
 
         // A skinned hood prefab binds to the whole Y Bot skeleton, not the head socket.
         // A non-skinned prefab stays rigid; procedural fallback remains available.
-        _hoodView = CreateWearable(_hoodPrefab, "Raised Hood", _hoodOffset, _hoodEuler);
-        if (_hoodPrefab == null || _hoodView.GetComponentInChildren<SkinnedMeshRenderer>(true) == null && _hoodView.transform.parent == _head && _hoodView.transform.childCount == 0)
+        bool hoodFallback;
+        _hoodView = CreateWearable(_hoodPrefab, "Raised Hood", _hoodOffset, _hoodEuler, out hoodFallback);
+        if (hoodFallback)
             ProceduralHeadwearMeshes.BuildRaisedHood(_hoodView.transform, fabric, trim, accent, _generatedMeshes);
 
         SetStyle(_initialStyle);
@@ -136,8 +138,9 @@ public sealed class HeadwearController : MonoBehaviour
         return null;
     }
 
-    private GameObject CreateWearable(GameObject prefab, string objectName, Vector3 offset, Vector3 euler)
+    private GameObject CreateWearable(GameObject prefab, string objectName, Vector3 offset, Vector3 euler, out bool generatedFallback)
     {
+        generatedFallback = prefab == null;
         if (prefab != null && prefab.GetComponentInChildren<SkinnedMeshRenderer>(true) != null)
         {
             // Garments must be exported against the EXACT same Y Bot rest skeleton.
@@ -155,6 +158,7 @@ public sealed class HeadwearController : MonoBehaviour
             Debug.LogError("Headwear: Skinned prefab failed Y Bot remapping, using generated prototype instead.", this);
             skinned.SetActive(false);
             Destroy(skinned);
+            generatedFallback = true;
             return CreateView(null, _head, objectName, offset, euler);
         }
 
