@@ -34,6 +34,49 @@ public static class HeadwearMeshValidation
             hood.SetParent(root.transform, false);
             ProceduralHeadwearMeshes.BuildRaisedHood(hood, fabric, fabric, fabric, meshes);
 
+            // When Main.unity is open, also verify that this demo's player is wired.
+            HeadwearController controller = Object.FindFirstObjectByType<HeadwearController>();
+            if (controller != null)
+            {
+                Animator avatar = controller.GetComponentInChildren<Animator>();
+                if (avatar == null)
+                {
+                    Debug.LogError("Headwear validation: Player has no child Animator.");
+                    valid = false;
+                }
+                else
+                {
+                    Transform head = null;
+                    if (avatar.isHuman && avatar.avatar != null && avatar.avatar.isValid)
+                        head = avatar.GetBoneTransform(HumanBodyBones.Head);
+
+                    if (head == null)
+                    {
+                        foreach (Transform bone in avatar.GetComponentsInChildren<Transform>(true))
+                        {
+                            if (bone.name == "Head" || bone.name.EndsWith(":Head", System.StringComparison.Ordinal))
+                            {
+                                head = bone;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (head == null)
+                    {
+                        Debug.LogError("Headwear validation: Cannot resolve the head attachment bone.");
+                        valid = false;
+                    }
+
+                    if (controller.GetComponentInChildren<SkinnedStripMesh>(true) == null)
+                        Debug.LogWarning("Headwear validation: Original scarf not found. Style cycle will skip showing it.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("Headwear validation: No HeadwearController in the open scene; only mesh checks were performed.");
+            }
+
             if (meshes.Count < 15)
             {
                 Debug.LogError("Headwear validation: expected all cap/hood parts to be generated.");
