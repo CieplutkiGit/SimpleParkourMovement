@@ -177,10 +177,12 @@ public static class ProceduralHeadwearMeshes
             for (int c = 0; c <= widthSections; c++)
             {
                 float u = c / (float)widthSections * 2f - 1f;
+                // Pull the front corners back so the brim has a rounded, not square, silhouette.
+                float curvedZ = z - 0.065f * u * u * t;
                 float y = 0.008f - 0.048f * t + 0.036f * u * u * t;
                 if (layer == 1)
                     y -= 0.012f;
-                g.Vertex(new Vector3(u * halfWidth, y, z), new Vector2((u + 1f) * 0.5f, t));
+                g.Vertex(new Vector3(u * halfWidth, y, curvedZ), new Vector2((u + 1f) * 0.5f, t));
             }
         }
 
