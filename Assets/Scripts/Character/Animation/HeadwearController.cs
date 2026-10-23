@@ -96,7 +96,10 @@ public sealed class HeadwearController : MonoBehaviour
         bool capFallback;
         _capView = CreateWearable(_capPrefab, "Technical Cap", _capOffset, _capEuler, out capFallback);
         if (capFallback)
+        {
             ProceduralHeadwearMeshes.BuildTechnicalCap(_capView.transform, fabric, trim, accent, _generatedMeshes);
+            ProceduralHeadwearMeshes.BatchStaticParts(_capView.transform, _generatedMeshes);
+        }
 
         // Keep simulated secondary motion when swapping a prototype for baked cap art.
         // Avoid injecting a generic strap into a fully skinned cap or a prefab
@@ -116,7 +119,10 @@ public sealed class HeadwearController : MonoBehaviour
         bool hoodFallback;
         _hoodView = CreateWearable(_hoodPrefab, "Raised Hood", _hoodOffset, _hoodEuler, out hoodFallback);
         if (hoodFallback)
+        {
             ProceduralHeadwearMeshes.BuildRaisedHood(_hoodView.transform, fabric, trim, accent, _generatedMeshes);
+            ProceduralHeadwearMeshes.BatchStaticParts(_hoodView.transform, _generatedMeshes);
+        }
 
         SetStyle(_initialStyle);
     }
