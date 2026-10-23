@@ -302,7 +302,14 @@ public static class HeadwearAssetBaker
                 continue;
 
             Mesh mesh = new Mesh { name = name + "_" + lodName + "_Batch" + i };
-            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            int vertices = 0;
+            foreach (CombineInstance part in batches[i])
+                vertices += part.mesh.vertexCount;
+            // Headwear has far fewer than 65k vertices: keep 16-bit indices
+            // to halve index-buffer bandwidth, upgrade only for huge custom art.
+            mesh.indexFormat = vertices <= 65535
+                ? UnityEngine.Rendering.IndexFormat.UInt16
+                : UnityEngine.Rendering.IndexFormat.UInt32;
             mesh.CombineMeshes(batches[i].ToArray(), true, true, false);
 
             // Stable asset paths/GUIDs: re-baking cannot break prefab references.
