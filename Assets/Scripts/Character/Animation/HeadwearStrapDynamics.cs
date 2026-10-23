@@ -31,7 +31,6 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
     private Transform _anchor;
     private Transform _head;
     private WindSO _wind;
-    private Rigidbody _body;
     private Mesh _mesh;
     private MeshFilter _filter;
     private MeshRenderer _renderer;
@@ -46,11 +45,10 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
     private bool _ready;
 
     /// <summary>Configure only once, after adding the component to an active object.</summary>
-    public void Configure(Transform anchor, Transform collisionHead, Rigidbody body, WindSO wind, Material material)
+    public void Configure(Transform anchor, Transform collisionHead, WindSO wind, Material material)
     {
         _anchor = anchor;
         _head = collisionHead;
-        _body = body;
         _wind = wind;
 
         if (_anchor == null)
@@ -265,8 +263,16 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (_mesh != null)
-            Destroy(_mesh);
+        if (_mesh == null)
+            return;
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            DestroyImmediate(_mesh);
+            return;
+        }
+#endif
+        Destroy(_mesh);
     }
 
     private void OnValidate()
