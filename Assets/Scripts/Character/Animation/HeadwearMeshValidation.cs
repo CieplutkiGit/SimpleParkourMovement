@@ -34,6 +34,30 @@ public static class HeadwearMeshValidation
             hood.SetParent(root.transform, false);
             ProceduralHeadwearMeshes.BuildRaisedHood(hood, fabric, fabric, fabric, meshes);
 
+            // Instantiate the real strap component in a disposable editor hierarchy.
+            // Its generated mesh is checked by the same attribute/triangle validation.
+            Transform strapRoot = new GameObject("strap simulation smoke test").transform;
+            strapRoot.SetParent(cap, false);
+            strapRoot.localPosition = new Vector3(0.06f, -0.018f, -0.187f);
+            HeadwearStrapDynamics strap = strapRoot.gameObject.AddComponent<HeadwearStrapDynamics>();
+            strap.Configure(strapRoot, null, null, fabric);
+            Mesh strapMesh = strapRoot.GetComponent<MeshFilter>()?.sharedMesh;
+            if (strapMesh == null)
+            {
+                Debug.LogError("Headwear validation: dynamic strap did not generate a mesh.");
+                valid = false;
+            }
+            else
+            {
+                meshes.Add(strapMesh);
+                strap.ResetSimulation();
+                if (strapMesh.bounds.size.sqrMagnitude < 1e-8f)
+                {
+                    Debug.LogError("Headwear validation: dynamic strap has no usable bounds.");
+                    valid = false;
+                }
+            }
+
             // When Main.unity is open, also verify that this demo's player is wired.
             HeadwearController controller = Object.FindFirstObjectByType<HeadwearController>();
             if (controller != null)
