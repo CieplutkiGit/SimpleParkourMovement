@@ -86,19 +86,59 @@ public static class HeadwearAssetBaker
 
         try
         {
-            if (isCap)
+            // Prefer real, editable OBJ source committed to the repository.
+            // Fallback generator remains available if the source is not imported.
+            string sourcePath = "Assets/Art/Headwear/Source/" + name + ".obj";
+            GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
+            if (source != null)
+            {
+                GameObject model = UnityEngine.Object.Instantiate(source, root.transform, false);
+                model.name = name + "_Source";
+                if (PrefabUtility.IsPartOfPrefabInstance(model))
+                    PrefabUtility.UnpackPrefabInstance(model, PrefabUnpackMode.Completely,
+                                                       InteractionMode.AutomatedAction);
+                foreach (MeshRenderer renderer in model.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    Material[] materials = renderer.sharedMaterials;
+                    for (int i = 0; i < materials.Length; i++)
+                    {
+                        string key = materials[i] != null ? materials[i].name.ToUpperInvariant() :
+                            renderer.gameObject.name.ToUpperInvariant();
+                        if (key.Contains("ACCENT") || key.Contains("STITCH") || key.Contains("MARK"))
+                            materials[i] = accent;
+                        else if (key.Contains("TRIM") || key.Contains("BRIM") ||
+                                 key.Contains("BAND") || key.Contains("EYELET") ||
+                                 key.Contains("SEAM") || key.Contains("BUTTON") ||
+                                 key.Contains("BACK_ADJUSTER"))
+                            materials[i] = trim;
+                        else
+                            materials[i] = fabric;
+                    }
+                    renderer.sharedMaterials = materials;
+                }
+            }
+            else if (isCap)
                 ProceduralHeadwearMeshes.BuildTechnicalCap(root.transform, fabric, trim, accent, temporary);
             else
                 ProceduralHeadwearMeshes.BuildRaisedHood(root.transform, fabric, trim, accent, temporary);
 
             MeshRenderer[] fullRenderers = root.GetComponentsInChildren<MeshRenderer>(true);
+            if (fullRenderers.Length == 0)
+                throw new InvalidOperationException("Imported headwear source contained no renderers: " + sourcePath);
+
+            HashSet<string> usedMeshPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (MeshRenderer renderer in fullRenderers)
             {
                 MeshFilter filter = renderer.GetComponent<MeshFilter>();
                 if (filter == null || filter.sharedMesh == null)
                     throw new InvalidOperationException("Headwear mesh part is missing its MeshFilter: " + renderer.name);
 
-                string path = Folder + "/" + name + "_" + SafeName(renderer.name) + ".asset";
+                string basePath = Folder + "/" + name + "_" + SafeName(renderer.name);
+                string path = basePath + ".asset";
+                int duplicate = 2;
+                while (!usedMeshPaths.Add(path))
+                    path = basePath + "_" + duplicate++ + ".asset";
+
                 Mesh oldAsset = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 Mesh copy = UnityEngine.Object.Instantiate(filter.sharedMesh);
                 copy.name = name + "_" + renderer.name;
@@ -111,11 +151,14 @@ public static class HeadwearAssetBaker
                 {
                     // Preserve the original GUID so prefab links survive rebaking.
                     oldAsset.Clear();
+                    oldAsset.indexFormat = copy.indexFormat;
                     oldAsset.vertices = copy.vertices;
                     oldAsset.uv = copy.uv;
                     oldAsset.normals = copy.normals;
                     oldAsset.tangents = copy.tangents;
-                    oldAsset.triangles = copy.triangles;
+                    oldAsset.subMeshCount = copy.subMeshCount;
+                    for (int submesh = 0; submesh < copy.subMeshCount; submesh++)
+                        oldAsset.SetTriangles(copy.GetTriangles(submesh), submesh);
                     oldAsset.RecalculateBounds();
                     EditorUtility.SetDirty(oldAsset);
                     filter.sharedMesh = oldAsset;
@@ -132,9 +175,11 @@ public static class HeadwearAssetBaker
             foreach (MeshRenderer original in fullRenderers)
             {
                 string partName = original.name;
+                string key = partName.ToLowerInvariant();
                 bool keep = isCap
-                    ? partName == "Six-panel crown" || partName == "Curved reinforced brim" || partName == "Reinforced lower band"
-                    : partName == "Outer hood shell" || partName == "Dark inner hood lining";
+                    ? key.Contains("crown") || key.Contains("brim") ||
+                      key.Contains("lower_band") || key.Contains("lower band")
+                    : key.Contains("outer") || key.Contains("inner");
                 if (!keep)
                     continue;
 
