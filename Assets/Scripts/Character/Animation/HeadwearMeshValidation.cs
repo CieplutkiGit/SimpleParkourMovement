@@ -101,6 +101,10 @@ public static class HeadwearMeshValidation
                 Debug.LogWarning("Headwear validation: No HeadwearController in the open scene; only mesh checks were performed.");
             }
 
+            // Baked assets are optional until Build and Assign is executed.
+            CheckBakedPrefab("Assets/Art/Headwear/Baked/TechnicalCap.prefab", ref valid);
+            CheckBakedPrefab("Assets/Art/Headwear/Baked/RaisedHood.prefab", ref valid);
+
             if (meshes.Count < 15)
             {
                 Debug.LogError("Headwear validation: expected all cap/hood parts to be generated.");
@@ -167,4 +171,60 @@ public static class HeadwearMeshValidation
             Object.DestroyImmediate(fabric);
         }
     }
+
+    private static void CheckBakedPrefab(string path, ref bool valid)
+    {
+        GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (asset == null)
+        {
+            Debug.LogWarning("Headwear validation: prefab not baked at " + path +
+                             ". Run Tools/Parkour/Build and Assign Headwear to Open Scene.");
+            return;
+        }
+
+        LODGroup lod = asset.GetComponent<LODGroup>();
+        if (lod == null || lod.GetLODs().Length < 2)
+        {
+            Debug.LogError("Headwear validation: no valid LODs in " + path);
+            valid = false;
+        }
+
+        MeshRenderer[] renderers = asset.GetComponentsInChildren<MeshRenderer>(true);
+        if (renderers.Length < 3)
+        {
+            Debug.LogError("Headwear validation: missing mesh parts in " + path);
+            valid = false;
+        }
+
+        foreach (MeshRenderer renderer in renderers)
+        {
+            MeshFilter filter = renderer.GetComponent<MeshFilter>();
+            if (filter == null || filter.sharedMesh == null ||
+                !AssetDatabase.Contains(filter.sharedMesh))
+            {
+                Debug.LogError("Headwear validation: unsaved mesh on " + renderer.name);
+                valid = false;
+            }
+
+            foreach (Material material in renderer.sharedMaterials)
+            {
+                if (material == null || material.shader == null ||
+                    material.shader.name != "Universal Render Pipeline/Lit")
+                {
+                    Debug.LogError("Headwear validation: missing URP/Lit material on " + renderer.name);
+                    valid = false;
+                    continue;
+                }
+
+                if (material.GetTexture("_BaseMap") == null ||
+                    material.GetTexture("_BumpMap") == null ||
+                    !material.IsKeywordEnabled("_NORMALMAP"))
+                {
+                    Debug.LogError("Headwear validation: missing normal/albedo maps on " + renderer.name);
+                    valid = false;
+                }
+            }
+        }
+    }
 }
+#endif
