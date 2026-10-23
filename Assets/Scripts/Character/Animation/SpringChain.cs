@@ -53,6 +53,25 @@ public class SpringChain : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Re-seed simulation after an accessory has been hidden, or after a teleport.
+    /// Avoids a large velocity spike when switching back from cap/hood to scarf.
+    /// </summary>
+    public void ResetSimulation()
+    {
+        if (_positions == null || _velocities == null || _bones == null)
+            return;
+
+        for (int i = 0; i < _bones.Length; i++)
+        {
+            if (_bones[i] == null)
+                continue;
+
+            _positions[i] = _bones[i].position;
+            _velocities[i] = Vector3.zero;
+        }
+    }
+
     private void LateUpdate()
     {
         _positions[0] = _bones[0].position;
