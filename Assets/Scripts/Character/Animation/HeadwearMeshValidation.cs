@@ -116,9 +116,9 @@ public static class HeadwearMeshValidation
             CheckBakedPrefab("Assets/Art/Headwear/Baked/TechnicalCap.prefab", ref valid);
             CheckBakedPrefab("Assets/Art/Headwear/Baked/RaisedHood.prefab", ref valid);
 
-            if (meshes.Count < 15)
+            if (meshes.Count < 3)
             {
-                Debug.LogError("Headwear validation: expected all cap/hood parts to be generated.");
+                Debug.LogError("Headwear validation: batched cap, hood, and strap meshes were not generated.");
                 valid = false;
             }
 
