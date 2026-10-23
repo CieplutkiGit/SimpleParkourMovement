@@ -1,0 +1,18 @@
+# PBR materials should replace these basic viewport colors in Blender/Unity.
+newmtl TECH_FABRIC
+Kd 0.085 0.095 0.110
+Ks 0.06 0.06 0.06
+Ns 18
+illum 2
+
+newmtl TECH_TRIM
+Kd 0.025 0.035 0.045
+Ks 0.09 0.09 0.09
+Ns 60
+illum 2
+
+newmtl TECH_ACCENT
+Kd 0.87 0.20 0.055
+Ks 0.09 0.09 0.09
+Ns 30
+illum 2
