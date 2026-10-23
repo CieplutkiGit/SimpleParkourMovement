@@ -96,16 +96,19 @@ public sealed class HeadwearController : MonoBehaviour
         bool capFallback;
         _capView = CreateWearable(_capPrefab, "Technical Cap", _capOffset, _capEuler, out capFallback);
         if (capFallback)
-        {
             ProceduralHeadwearMeshes.BuildTechnicalCap(_capView.transform, fabric, trim, accent, _generatedMeshes);
-            if (_simulateAdjustmentTail)
-            {
-                GameObject tail = new GameObject("Simulated adjustment strap");
-                tail.transform.SetParent(_capView.transform, false);
-                tail.transform.localPosition = new Vector3(0.06f, -0.018f, -0.187f);
-                tail.AddComponent<HeadwearStrapDynamics>().Configure(
-                    tail.transform, _head, _wind, trim);
-            }
+
+        // Keep simulated secondary motion when swapping a prototype for baked cap art.
+        // Avoid injecting a generic strap into a fully skinned cap or a prefab
+        // that already contains its own rig/simulation setup.
+        if (_simulateAdjustmentTail &&
+            _capView.transform.parent == _head &&
+            _capView.GetComponentInChildren<HeadwearStrapDynamics>(true) == null)
+        {
+            GameObject tail = new GameObject("Simulated adjustment strap");
+            tail.transform.SetParent(_capView.transform, false);
+            tail.transform.localPosition = new Vector3(0.06f, -0.018f, -0.187f);
+            tail.AddComponent<HeadwearStrapDynamics>().Configure(tail.transform, _head, _wind, trim);
         }
 
         // A skinned hood prefab binds to the whole Y Bot skeleton, not the head socket.
