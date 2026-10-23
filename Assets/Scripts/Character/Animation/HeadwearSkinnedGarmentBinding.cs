@@ -12,6 +12,8 @@ using UnityEngine;
 public sealed class HeadwearSkinnedGarmentBinding : MonoBehaviour
 {
     [SerializeField] private bool _logMissingBones = true;
+    [Tooltip("Enable only for garments with genuinely animated offscreen cloth.")]
+    [SerializeField] private bool _updateWhenOffscreen = false;
 
     /// <returns>True only if every renderer can be rebound without missing bones.</returns>
     public bool BindTo(Animator characterAnimator)
@@ -100,7 +102,7 @@ public sealed class HeadwearSkinnedGarmentBinding : MonoBehaviour
         {
             renderers[i].bones = newBones[i];
             renderers[i].rootBone = newRoots[i];
-            renderers[i].updateWhenOffscreen = true;
+            renderers[i].updateWhenOffscreen = _updateWhenOffscreen;
         }
 
         return true;
