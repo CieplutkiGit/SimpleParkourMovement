@@ -368,6 +368,77 @@ public static class ProceduralHeadwearMeshes
         AddPart(root, name, g, material, meshes);
     }
 
+    /// <summary>
+    /// Runtime fallback only: collapse decorative pieces into a few renderers
+    /// grouped by shared Material. Executed once at spawn, never per frame.
+    /// The bake pipeline creates persistent combined meshes instead.
+    /// </summary>
+    public static void BatchStaticParts(Transform root, List<Mesh> ownedMeshes)
+    {
+        MeshRenderer[] source = root.GetComponentsInChildren<MeshRenderer>(true);
+        if (source.Length < 4)
+            return;
+
+        Dictionary<Material, List<CombineInstance>> batches =
+            new Dictionary<Material, List<CombineInstance>>();
+        Matrix4x4 toRoot = root.worldToLocalMatrix;
+
+        foreach (MeshRenderer renderer in source)
+        {
+            MeshFilter filter = renderer.GetComponent<MeshFilter>();
+            if (filter == null || filter.sharedMesh == null)
+                continue;
+
+            Mesh sourceMesh = filter.sharedMesh;
+            Material[] materials = renderer.sharedMaterials;
+            for (int submesh = 0; submesh < sourceMesh.subMeshCount && submesh < materials.Length; submesh++)
+            {
+                Material mat = materials[submesh];
+                if (mat == null)
+                    continue;
+                if (!batches.TryGetValue(mat, out List<CombineInstance> list))
+                {
+                    list = new List<CombineInstance>();
+                    batches.Add(mat, list);
+                }
+
+                list.Add(new CombineInstance
+                {
+                    mesh = sourceMesh,
+                    subMeshIndex = submesh,
+                    transform = toRoot * filter.transform.localToWorldMatrix
+                });
+            }
+        }
+
+        foreach (KeyValuePair<Material, List<CombineInstance>> batch in batches)
+        {
+            Mesh combined = new Mesh { name = "Batched headwear " + batch.Key.name };
+            combined.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            combined.CombineMeshes(batch.Value.ToArray(), true, true, false);
+            ownedMeshes.Add(combined);
+
+            GameObject visual = new GameObject(combined.name);
+            visual.transform.SetParent(root, false);
+            visual.AddComponent<MeshFilter>().sharedMesh = combined;
+            MeshRenderer renderer = visual.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = batch.Key;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+            renderer.receiveShadows = true;
+        }
+
+        // Remove duplicate renderers immediately, even though their GameObjects
+        // are destroyed at the end of the frame.
+        foreach (MeshRenderer renderer in source)
+        {
+            renderer.enabled = false;
+            if (Application.isPlaying)
+                Object.Destroy(renderer.gameObject);
+            else
+                Object.DestroyImmediate(renderer.gameObject);
+        }
+    }
+
     private static void AddPart(Transform root, string partName, Geometry geometry, Material material, List<Mesh> ownedMeshes)
     {
         GameObject part = new GameObject(partName);
