@@ -66,6 +66,12 @@ public static class HeadwearAssetBaker
         SerializedObject serialized = new SerializedObject(controller);
         serialized.FindProperty("_capPrefab").objectReferenceValue = cap;
         serialized.FindProperty("_hoodPrefab").objectReferenceValue = hood;
+        serialized.FindProperty("_fabric").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<Material>(Folder + "/Mat_FabricCharcoal.mat");
+        serialized.FindProperty("_trim").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<Material>(Folder + "/Mat_RubberizedTrim.mat");
+        serialized.FindProperty("_accent").objectReferenceValue =
+            AssetDatabase.LoadAssetAtPath<Material>(Folder + "/Mat_AccentOrange.mat");
         serialized.ApplyModifiedProperties();
         EditorUtility.SetDirty(controller);
         EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
@@ -93,11 +99,28 @@ public static class HeadwearAssetBaker
                     throw new InvalidOperationException("Headwear mesh part is missing its MeshFilter: " + renderer.name);
 
                 string path = Folder + "/" + name + "_" + SafeName(renderer.name) + ".asset";
-                ReplaceAsset(path);
+                Mesh oldAsset = AssetDatabase.LoadAssetAtPath<Mesh>(path);
                 Mesh copy = UnityEngine.Object.Instantiate(filter.sharedMesh);
                 copy.name = name + "_" + renderer.name;
-                AssetDatabase.CreateAsset(copy, path);
-                filter.sharedMesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+                if (oldAsset == null)
+                {
+                    AssetDatabase.CreateAsset(copy, path);
+                    filter.sharedMesh = copy;
+                }
+                else
+                {
+                    // Preserve the original GUID so prefab links survive rebaking.
+                    oldAsset.Clear();
+                    oldAsset.vertices = copy.vertices;
+                    oldAsset.uv = copy.uv;
+                    oldAsset.normals = copy.normals;
+                    oldAsset.tangents = copy.tangents;
+                    oldAsset.triangles = copy.triangles;
+                    oldAsset.RecalculateBounds();
+                    EditorUtility.SetDirty(oldAsset);
+                    filter.sharedMesh = oldAsset;
+                    UnityEngine.Object.DestroyImmediate(copy);
+                }
             }
 
             // Simplified visual LOD: reuse crown/brim on the cap, shell/lining
@@ -134,7 +157,7 @@ public static class HeadwearAssetBaker
             lod.RecalculateBounds();
 
             string prefabPath = Folder + "/" + name + ".prefab";
-            ReplaceAsset(prefabPath);
+            // Saving to the same prefab path preserves its GUID on rebake.
             GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             if (saved == null)
                 throw new InvalidOperationException("Failed to save " + prefabPath);
@@ -152,8 +175,12 @@ public static class HeadwearAssetBaker
                                           Texture2D normal, float smoothness, float metallic, float bumpStrength)
     {
         string path = Folder + "/" + name + ".mat";
-        ReplaceAsset(path);
-        Material material = new Material(shader) { name = name };
+        Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+        bool newlyCreated = material == null;
+        if (newlyCreated)
+            material = new Material(shader) { name = name };
+        else
+            material.shader = shader;
         material.SetColor("_BaseColor", tint);
         material.SetTexture("_BaseMap", baseMap);
         material.SetTexture("_BumpMap", normal);
@@ -165,8 +192,11 @@ public static class HeadwearAssetBaker
         // help break up smooth, plastic-looking synthetic surfaces.
         material.SetTextureScale("_BaseMap", new Vector2(2.5f, 2.5f));
         material.SetTextureScale("_BumpMap", new Vector2(2.5f, 2.5f));
-        AssetDatabase.CreateAsset(material, path);
-        return AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (newlyCreated)
+            AssetDatabase.CreateAsset(material, path);
+        else
+            EditorUtility.SetDirty(material);
+        return material;
     }
 
     private static Texture2D CreateWeaveTexture(string path, bool normalMap)
@@ -245,12 +275,6 @@ public static class HeadwearAssetBaker
             if (!char.IsLetterOrDigit(chars[i]))
                 chars[i] = '_';
         return new string(chars);
-    }
-
-    private static void ReplaceAsset(string path)
-    {
-        if (AssetDatabase.LoadMainAssetAtPath(path) != null)
-            AssetDatabase.DeleteAsset(path);
     }
 
     private static void CreateFolderTree(string path)
