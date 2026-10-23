@@ -96,6 +96,42 @@ model-root space on spawn and then parented to the live head bone. This avoids
 assuming Mixamo's head bone local axes match the character's forward axis.
 If the Y Bot's imported forward axis differs, tune Cap/Hood Euler in Inspector.
 
+## Runtime performance budget and optimization
+
+Performance work is in the same feature branch; none of these are measured
+FPS improvements until the Unity Editor/Profiler is run on target hardware.
+
+| Hotspot | Implemented optimization |
+| --- | --- |
+| Dynamic rear strap | Reuses fixed vertex and normal arrays; no per-frame `RecalculateNormals` or `RecalculateBounds`; streams modified arrays with `MeshUpdateFlags` |
+| Frame stalls | Maximum simulation catch-up of 50 ms; short bounded steps and teleport resets |
+| Distant strap | Skips both simulation and mesh uploads beyond 20 meters from cached main camera (editable in Inspector); resets cleanly when near again |
+| Decorator draw calls | Both runtime fallback and baked art are grouped by material into at most three static renderers per LOD |
+| Static mesh index memory | Uses 16-bit triangle indices when under 65,536 vertices |
+| Mesh duplication | Transient source meshes are disposed after material batching; source OBJ files remain on disk |
+| LOD1 triangles | Dedicated `TechnicalCap_LOD1.obj` (436 triangles vs 6,028 high detail) and `RaisedHood_LOD1.obj` (288 vs 2,450) |
+| Garment skinning | Offscreen skinned-mesh updates opt-in (should remain disabled for regular headwear) |
+| Original scarf | Rest vectors and capsule collision terms calculated once per frame; simulation catch-up capped |
+
+Static source math corresponds to **92.8% fewer cap triangles** and
+**88.2% fewer hood triangles** at LOD1, before imported mesh processing.
+Draw calls also depend on URP material/shader variants and lighting. LOD
+transition thresholds are 0.35 and 0.025 of screen-height ratio, and
+`LODFadeMode.None` avoids double-render during fading.
+
+When Unity asset baking runs, its combined mesh outputs are native Unity
+assets with stable GUIDs. In the Unity smoke test, the baked LODs must have
+at most three renderers each and LOD1 may not exceed half of LOD0 triangles.
+
+**Required measured validation:** Profile the HeadwearStrapDynamics
+`LateUpdate`, main-thread `GC.Alloc`, `SkinnedMeshRenderer` CPU cost,
+URP draw calls and GPU frame time at target resolution with cap, hood,
+scarf, and bare modes. Test both cold-start and steady state, camera
+close/far, sprint/vault/wall-run and repeated cosmetic switching. A
+zero-alloc steady-state strap update is a design goal, not yet a profiled
+fact. The build is not ready for a shipping performance claim without
+those measurements.
+
 ## Unity 6 compile, import and rig verification
 
 This is separate from the green Python/GitHub static checks. Use the
