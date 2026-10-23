@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 72b32e728f0b4c5d92f9726e96cc2b53
+ModelImporter:
+  serializedVersion: 24200
+  materials:
+    materialImportMode: 1
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  meshes:
+    globalScale: 1
+    isReadable: 1
+    weldVertices: 1
+  importAnimation: 0
+  animationType: 0
