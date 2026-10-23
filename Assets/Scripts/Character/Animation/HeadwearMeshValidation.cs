@@ -1,0 +1,97 @@
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using UnityEditor;
+using UnityEngine;
+
+/// <summary>Editor-only geometry smoke test. No test assembly or third-party packages required.</summary>
+public static class HeadwearMeshValidation
+{
+    [MenuItem("Tools/Parkour/Validate Headwear Geometry")]
+    private static void ValidateMeshes()
+    {
+        Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+        if (shader == null)
+            shader = Shader.Find("Standard");
+        if (shader == null)
+        {
+            Debug.LogError("Headwear mesh validation: cannot locate a compatible shader.");
+            return;
+        }
+
+        GameObject root = new GameObject("TEMP - Headwear Geometry Validation");
+        Material fabric = new Material(shader);
+        List<Mesh> meshes = new List<Mesh>();
+        bool valid = true;
+        int faces = 0;
+
+        try
+        {
+            Transform cap = new GameObject("cap").transform;
+            cap.SetParent(root.transform, false);
+            ProceduralHeadwearMeshes.BuildTechnicalCap(cap, fabric, fabric, fabric, meshes);
+
+            Transform hood = new GameObject("hood").transform;
+            hood.SetParent(root.transform, false);
+            ProceduralHeadwearMeshes.BuildRaisedHood(hood, fabric, fabric, fabric, meshes);
+
+            if (meshes.Count < 15)
+            {
+                Debug.LogError("Headwear validation: expected all cap/hood parts to be generated.");
+                valid = false;
+            }
+
+            foreach (Mesh m in meshes)
+            {
+                if (m == null || m.vertexCount == 0 || m.triangles.Length == 0)
+                {
+                    Debug.LogError("Headwear validation: missing mesh geometry.");
+                    valid = false;
+                    continue;
+                }
+
+                Vector3[] vertices = m.vertices;
+                Vector3[] normals = m.normals;
+                Vector2[] uvs = m.uv;
+                int[] triangles = m.triangles;
+
+                if (normals.Length != vertices.Length || uvs.Length != vertices.Length || triangles.Length % 3 != 0)
+                {
+                    Debug.LogError("Headwear validation: invalid vertex attributes on " + m.name);
+                    valid = false;
+                }
+
+                for (int i = 0; i < triangles.Length; i += 3)
+                {
+                    int a = triangles[i], b = triangles[i + 1], c = triangles[i + 2];
+                    if (a < 0 || b < 0 || c < 0 || a >= vertices.Length || b >= vertices.Length || c >= vertices.Length)
+                    {
+                        Debug.LogError("Headwear validation: triangle index out of range in " + m.name);
+                        valid = false;
+                        break;
+                    }
+
+                    float area2 = Vector3.Cross(vertices[b] - vertices[a], vertices[c] - vertices[a]).sqrMagnitude;
+                    if (area2 < 1e-16f)
+                    {
+                        Debug.LogWarning("Headwear validation: degenerate triangle in " + m.name);
+                        valid = false;
+                        break;
+                    }
+
+                    faces++;
+                }
+            }
+            if (valid)
+                Debug.Log("Headwear geometry validation passed: " + meshes.Count + " submeshes, " + faces + " triangles.");
+            else
+                Debug.LogError("Headwear geometry validation FAILED. Check errors above.");
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
+            foreach (Mesh mesh in meshes)
+                if (mesh != null) Object.DestroyImmediate(mesh);
+            Object.DestroyImmediate(fabric);
+        }
+    }
+}
