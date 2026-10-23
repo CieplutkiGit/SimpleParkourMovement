@@ -437,6 +437,18 @@ public static class ProceduralHeadwearMeshes
         foreach (MeshRenderer renderer in source)
         {
             renderer.enabled = false;
+            MeshFilter filter = renderer.GetComponent<MeshFilter>();
+            Mesh original = filter != null ? filter.sharedMesh : null;
+            // The combined mesh owns its own vertex data. Release the temporary
+            // small meshes rather than retaining both copies for the whole session.
+            if (original != null && ownedMeshes.Remove(original))
+            {
+                if (Application.isPlaying)
+                    Object.Destroy(original);
+                else
+                    Object.DestroyImmediate(original);
+            }
+
             if (Application.isPlaying)
                 Object.Destroy(renderer.gameObject);
             else
