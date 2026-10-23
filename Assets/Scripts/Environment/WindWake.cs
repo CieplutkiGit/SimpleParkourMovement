@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[DefaultExecutionOrder(-150)]
 public class WindWake : MonoBehaviour
 {
     private static readonly int GlobalWindId = Shader.PropertyToID("_GlobalWind");
