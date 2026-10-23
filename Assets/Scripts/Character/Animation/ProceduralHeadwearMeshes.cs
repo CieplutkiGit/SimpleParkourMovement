@@ -414,7 +414,12 @@ public static class ProceduralHeadwearMeshes
         foreach (KeyValuePair<Material, List<CombineInstance>> batch in batches)
         {
             Mesh combined = new Mesh { name = "Batched headwear " + batch.Key.name };
-            combined.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            int vertices = 0;
+            foreach (CombineInstance part in batch.Value)
+                vertices += part.mesh.vertexCount;
+            combined.indexFormat = vertices <= 65535
+                ? UnityEngine.Rendering.IndexFormat.UInt16
+                : UnityEngine.Rendering.IndexFormat.UInt32;
             combined.CombineMeshes(batch.Value.ToArray(), true, true, false);
             ownedMeshes.Add(combined);
 
