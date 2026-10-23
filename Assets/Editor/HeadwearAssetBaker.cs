@@ -15,6 +15,7 @@ using UnityEngine;
 public static class HeadwearAssetBaker
 {
     private const string Folder = "Assets/Art/Headwear/Baked";
+    private const string TextureSources = "Assets/Art/Headwear/Source/Textures";
 
     [MenuItem("Tools/Parkour/Build Headwear Assets")]
     public static void Bake()
@@ -27,14 +28,22 @@ public static class HeadwearAssetBaker
             return;
         }
 
-        Texture2D albedo = CreateWeaveTexture(Folder + "/Fabric_Weave_Albedo.png", false);
-        Texture2D normal = CreateWeaveTexture(Folder + "/Fabric_Weave_Normal.png", true);
+        // Source textures are committed as PNGs and are available immediately
+        // on checkout. The original deterministic generator remains a fallback.
+        Texture2D albedo = AssetDatabase.LoadAssetAtPath<Texture2D>(TextureSources + "/Fabric_Weave_Albedo.png");
+        Texture2D normal = AssetDatabase.LoadAssetAtPath<Texture2D>(TextureSources + "/Fabric_Weave_Normal.png");
+        Texture2D occlusion = AssetDatabase.LoadAssetAtPath<Texture2D>(TextureSources + "/Fabric_Weave_Occlusion.png");
+        if (albedo == null)
+            albedo = CreateWeaveTexture(Folder + "/Fabric_Weave_Albedo.png", false);
+        if (normal == null)
+            normal = CreateWeaveTexture(Folder + "/Fabric_Weave_Normal.png", true);
+
         Material fabric = MakeMaterial(shader, "Mat_FabricCharcoal", new Color(0.31f, 0.34f, 0.38f),
-                                       albedo, normal, 0.17f, 0f, 0.65f);
+                                       albedo, normal, occlusion, 0.17f, 0f, 0.65f);
         Material trim = MakeMaterial(shader, "Mat_RubberizedTrim", new Color(0.045f, 0.055f, 0.07f),
-                                     albedo, normal, 0.34f, 0f, 0.18f);
+                                     albedo, normal, occlusion, 0.34f, 0f, 0.18f);
         Material accent = MakeMaterial(shader, "Mat_AccentOrange", new Color(0.91f, 0.25f, 0.075f),
-                                       albedo, normal, 0.23f, 0.05f, 0.22f);
+                                       albedo, normal, occlusion, 0.23f, 0.05f, 0.22f);
 
         BuildPrefab("TechnicalCap", fabric, trim, accent, true);
         BuildPrefab("RaisedHood", fabric, trim, accent, false);
@@ -237,7 +246,8 @@ public static class HeadwearAssetBaker
     }
 
     private static Material MakeMaterial(Shader shader, string name, Color tint, Texture2D baseMap,
-                                          Texture2D normal, float smoothness, float metallic, float bumpStrength)
+                                          Texture2D normal, Texture2D occlusion,
+                                          float smoothness, float metallic, float bumpStrength)
     {
         string path = Folder + "/" + name + ".mat";
         Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
@@ -249,6 +259,17 @@ public static class HeadwearAssetBaker
         material.SetColor("_BaseColor", tint);
         material.SetTexture("_BaseMap", baseMap);
         material.SetTexture("_BumpMap", normal);
+        if (occlusion != null)
+        {
+            material.SetTexture("_OcclusionMap", occlusion);
+            material.SetFloat("_OcclusionStrength", 0.42f);
+            material.EnableKeyword("_OCCLUSIONMAP");
+        }
+        else
+        {
+            material.SetTexture("_OcclusionMap", null);
+            material.DisableKeyword("_OCCLUSIONMAP");
+        }
         material.SetFloat("_Smoothness", smoothness);
         material.SetFloat("_Metallic", metallic);
         material.SetFloat("_BumpScale", bumpStrength);
@@ -257,6 +278,7 @@ public static class HeadwearAssetBaker
         // help break up smooth, plastic-looking synthetic surfaces.
         material.SetTextureScale("_BaseMap", new Vector2(2.5f, 2.5f));
         material.SetTextureScale("_BumpMap", new Vector2(2.5f, 2.5f));
+        material.SetTextureScale("_OcclusionMap", new Vector2(2.5f, 2.5f));
         if (newlyCreated)
             AssetDatabase.CreateAsset(material, path);
         else
