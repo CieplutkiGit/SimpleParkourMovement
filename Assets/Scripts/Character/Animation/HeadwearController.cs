@@ -25,7 +25,7 @@ public sealed class HeadwearController : MonoBehaviour
     [SerializeField] private GameObject _capPrefab;
     [SerializeField] private GameObject _hoodPrefab;
 
-    [Header("Fit to character (local to head bone)")]
+    [Header("Fit to character (model-root space at spawn; follows head thereafter)")]
     [SerializeField] private Vector3 _capOffset = new Vector3(0f, 0.16f, 0.015f);
     [SerializeField] private Vector3 _capEuler;
     [SerializeField] private Vector3 _hoodOffset = new Vector3(0f, 0.105f, -0.015f);
@@ -168,13 +168,18 @@ public sealed class HeadwearController : MonoBehaviour
         return CreateView(prefab, _head, objectName, offset, euler);
     }
 
-    private static GameObject CreateView(GameObject prefab, Transform parent, string objectName, Vector3 offset, Vector3 euler)
+    private GameObject CreateView(GameObject prefab, Transform parent, string objectName, Vector3 offset, Vector3 euler)
     {
-        GameObject view = prefab != null ? Object.Instantiate(prefab, parent, false) : new GameObject(objectName);
+        GameObject view = prefab != null ? Instantiate(prefab, parent, false) : new GameObject(objectName);
         view.name = objectName;
         view.transform.SetParent(parent, false);
-        view.transform.localPosition = offset;
-        view.transform.localRotation = Quaternion.Euler(euler);
+
+        // The Mixamo Humanoid Head bone axes are NOT guaranteed to face character
+        // forward. Fit in character-model coordinates, then parent to the animated
+        // head: the initial brim faces forward and still follows future head turns.
+        Transform model = _animator.transform;
+        view.transform.position = parent.position + model.TransformDirection(offset);
+        view.transform.rotation = model.rotation * Quaternion.Euler(euler);
         return view;
     }
 
