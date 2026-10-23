@@ -157,11 +157,31 @@ public static class HeadwearBatchSmokeTest
         }
 
         LODGroup lod = prefab.GetComponent<LODGroup>();
-        if (lod == null || lod.GetLODs().Length < 2)
+        if (lod == null || lod.GetLODs().Length != 2)
             throw new InvalidOperationException(name + " has no two-stage distance LOD.");
-        if (triangles < 100)
-            throw new InvalidOperationException(name + " generated an empty/incorrect mesh.");
-        Debug.Log(name + ": validated " + filters.Length + " render mesh parts, " + triangles + " triangles (both LODs).");
+
+        LOD[] levels = lod.GetLODs();
+        int[] lodTriangles = new int[levels.Length];
+        for (int index = 0; index < levels.Length; index++)
+        {
+            if (levels[index].renderers.Length == 0 || levels[index].renderers.Length > 3)
+                throw new InvalidOperationException(name + " LOD" + index +
+                    " exceeds 3 material-batched renderers.");
+            foreach (Renderer renderer in levels[index].renderers)
+            {
+                MeshFilter filter = renderer != null ? renderer.GetComponent<MeshFilter>() : null;
+                if (filter == null || filter.sharedMesh == null)
+                    throw new InvalidOperationException(name + " LOD" + index + " is missing MeshFilter.");
+                Mesh mesh = filter.sharedMesh;
+                for (int part = 0; part < mesh.subMeshCount; part++)
+                    lodTriangles[index] += mesh.GetTriangles(part).Length / 3;
+            }
+        }
+        if (lodTriangles[0] < 100 || lodTriangles[1] > lodTriangles[0])
+            throw new InvalidOperationException(name + " invalid triangle counts across LODs.");
+        Debug.Log(name + ": LOD0=" + lodTriangles[0] + " triangles/" +
+                  levels[0].renderers.Length + " renderers, LOD1=" + lodTriangles[1] +
+                  " triangles/" + levels[1].renderers.Length + " renderers.");
     }
 }
 #endif
