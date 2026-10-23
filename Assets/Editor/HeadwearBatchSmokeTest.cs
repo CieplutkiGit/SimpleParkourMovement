@@ -177,8 +177,9 @@ public static class HeadwearBatchSmokeTest
                     lodTriangles[index] += mesh.GetTriangles(part).Length / 3;
             }
         }
-        if (lodTriangles[0] < 100 || lodTriangles[1] > lodTriangles[0])
-            throw new InvalidOperationException(name + " invalid triangle counts across LODs.");
+        if (lodTriangles[0] < 100 || lodTriangles[1] > lodTriangles[0] * 0.5f)
+            throw new InvalidOperationException(name +
+                " LOD1 must be at least 50% lighter than LOD0. Verify the low-poly OBJ importer.");
         Debug.Log(name + ": LOD0=" + lodTriangles[0] + " triangles/" +
                   levels[0].renderers.Length + " renderers, LOD1=" + lodTriangles[1] +
                   " triangles/" + levels[1].renderers.Length + " renderers.");
