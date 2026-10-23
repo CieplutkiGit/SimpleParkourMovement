@@ -17,7 +17,11 @@ public class SpringChain : MonoBehaviour
     private Vector3 _capA;
     private Vector3 _capB;
     private Vector3[] _segmentLocal;
+    private Vector3[] _restWorld;
     private Vector3[] _positions;
+    private Vector3 _frameExternal;
+    private Vector3 _capsuleAxis;
+    private float _capsuleAxisSqr;
     private Vector3[] _velocities;
     private float[] _lengths;
     private Vector3[] _boneAxis;
@@ -29,6 +33,7 @@ public class SpringChain : MonoBehaviour
 
         _anchorParent = _bones[0].parent;
         _segmentLocal = new Vector3[count];
+        _restWorld = new Vector3[count];
         _positions = new Vector3[count];
         _velocities = new Vector3[count];
         _lengths = new float[count];
@@ -77,12 +82,22 @@ public class SpringChain : MonoBehaviour
         _positions[0] = _bones[0].position;
         _capA = _colliderTop.position;
         _capB = _colliderBottom.position;
+        _capsuleAxis = _capB - _capA;
+        _capsuleAxisSqr = _capsuleAxis.sqrMagnitude;
+        _frameExternal = Vector3.down * _gravity +
+            (_wind != null ? _wind.Current * _windInfluence : Vector3.zero);
 
-        float remaining = Time.deltaTime;
+        // Convert each rest direction once per frame, not once for every
+        // simulated substep. Clamp a stalled frame to prevent catch-up spikes.
+        for (int i = 1; i < _restWorld.Length; i++)
+            _restWorld[i] = _anchorParent.TransformDirection(_segmentLocal[i]);
 
-        while (remaining > 0f)
+        float remaining = Mathf.Min(Time.deltaTime, 0.05f);
+        float maxStep = Mathf.Max(0.005f, _maxStep);
+
+        while (remaining > 0.00001f)
         {
-            float h = Mathf.Min(remaining, _maxStep);
+            float h = Mathf.Min(remaining, maxStep);
             Step(h);
             remaining -= h;
         }
@@ -92,14 +107,12 @@ public class SpringChain : MonoBehaviour
 
     private void Step(float h)
     {
-        Vector3 external = Vector3.down * _gravity + _wind.Current * _windInfluence;
-
         for (int i = 1; i < _positions.Length; i++)
         {
-            Vector3 restTarget = _positions[i - 1] + _anchorParent.TransformDirection(_segmentLocal[i]);
+            Vector3 restTarget = _positions[i - 1] + _restWorld[i];
             Vector3 spring = _stiffness * (restTarget - _positions[i]) - _damping * _velocities[i];
 
-            _velocities[i] += (spring + external) * h;
+            _velocities[i] += (spring + _frameExternal) * h;
             _positions[i] += _velocities[i] * h;
 
             Vector3 direction = _positions[i] - _positions[i - 1];
@@ -110,9 +123,11 @@ public class SpringChain : MonoBehaviour
 
     private Vector3 Collide(Vector3 p)
     {
-        Vector3 ab = _capB - _capA;
-        float t = Mathf.Clamp01(Vector3.Dot(p - _capA, ab) / Vector3.Dot(ab, ab));
-        Vector3 c = _capA + ab * t;
+        if (_capsuleAxisSqr < 1e-8f)
+            return p;
+
+        float t = Mathf.Clamp01(Vector3.Dot(p - _capA, _capsuleAxis) / _capsuleAxisSqr);
+        Vector3 c = _capA + _capsuleAxis * t;
         Vector3 delta = p - c;
         float sqr = delta.sqrMagnitude;
 
