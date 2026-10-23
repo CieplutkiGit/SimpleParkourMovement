@@ -151,7 +151,7 @@ public static class HeadwearAssetBaker
             LODGroup lod = root.AddComponent<LODGroup>();
             lod.SetLODs(new[]
             {
-                new LOD(0.35f, Array.ConvertAll(fullRenderers, item => (Renderer)item)),
+                new LOD(0.35f, Array.ConvertAll<MeshRenderer, Renderer>(fullRenderers, item => item)),
                 new LOD(0.08f, farRenderers.ToArray())
             });
             lod.RecalculateBounds();
@@ -202,7 +202,7 @@ public static class HeadwearAssetBaker
     private static Texture2D CreateWeaveTexture(string path, bool normalMap)
     {
         const int size = 512;
-        Texture2D generated = new Texture2D(size, size, TextureFormat.RGBA32, false, !normalMap);
+        Texture2D generated = new Texture2D(size, size, TextureFormat.RGBA32, false, normalMap);
         generated.name = Path.GetFileNameWithoutExtension(path);
         generated.wrapMode = TextureWrapMode.Repeat;
 
