@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 /// <summary>
 /// Lightweight, animation-following PBD ribbon for a cap adjustment tail or small
@@ -28,6 +29,11 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
     [Header("Collision")]
     [SerializeField, Min(0.01f)] private float _headCollisionRadius = 0.14f;
 
+    [Header("Performance")]
+    [SerializeField, Min(2f)] private float _simulationDistance = 20f;
+    [SerializeField] private Camera _viewCamera;
+    [SerializeField] private bool _skipSimulationAtDistance = true;
+
     private Transform _anchor;
     private Transform _head;
     private WindSO _wind;
@@ -37,12 +43,17 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
     private Vector3[] _positions;
     private Vector3[] _previous;
     private Vector3[] _vertices;
+    private Vector3[] _normals;
     private Vector2[] _uv;
     private int[] _triangles;
     private float _segmentLength;
     private Vector3 _oldAnchorPosition;
     private Quaternion _oldAnchorRotation;
     private bool _ready;
+    private bool _distanceCulled;
+    private const MeshUpdateFlags FastUpdateFlags =
+        MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices |
+        MeshUpdateFlags.DontNotifyMeshUsers;
 
     /// <summary>Configure only once, after adding the component to an active object.</summary>
     public void Configure(Transform anchor, Transform collisionHead, WindSO wind, Material material)
@@ -63,6 +74,7 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
         _positions = new Vector3[_segments + 1];
         _previous = new Vector3[_segments + 1];
         _vertices = new Vector3[(_segments + 1) * 4];
+        _normals = new Vector3[_vertices.Length];
         _uv = new Vector2[_vertices.Length];
         _triangles = new int[_segments * 24];
 
@@ -97,8 +109,13 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
         _mesh = new Mesh { name = "Dynamic headwear adjustment tail" };
         _mesh.MarkDynamic();
         _mesh.vertices = _vertices;
+        _mesh.normals = _normals;
         _mesh.uv = _uv;
         _mesh.triangles = _triangles;
+        // Constraint lengths bound motion around the attachment point. A generous
+        // local AABB keeps the ribbon visible without per-frame RecalculateBounds.
+        float radius = _length + _headCollisionRadius + 0.2f;
+        _mesh.bounds = new Bounds(Vector3.zero, Vector3.one * (2f * radius));
 
         _filter = GetComponent<MeshFilter>();
         if (_filter == null)
@@ -109,8 +126,11 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
 
         _filter.sharedMesh = _mesh;
         _renderer.sharedMaterial = material;
-        _renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+        // Tiny moving straps are sub-pixel shadow casters in most parkour shots.
+        _renderer.shadowCastingMode = ShadowCastingMode.Off;
         _renderer.receiveShadows = true;
+        if (_viewCamera == null)
+            _viewCamera = Camera.main; // Cached once, never searched every frame.
 
         _ready = true;
         ResetSimulation();
@@ -153,6 +173,23 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
     {
         if (!_ready || _anchor == null)
             return;
+
+        // For NPCs and distant player cameras, stop both constraints and uploads.
+        // Reset before resuming so there is no burst from old Verlet positions.
+        if (_skipSimulationAtDistance && _viewCamera != null)
+        {
+            float distanceSquared = (_viewCamera.transform.position - _anchor.position).sqrMagnitude;
+            bool cull = distanceSquared > _simulationDistance * _simulationDistance;
+            if (cull != _distanceCulled)
+            {
+                _distanceCulled = cull;
+                _renderer.enabled = !cull;
+                if (!cull)
+                    ResetSimulation();
+            }
+            if (cull)
+                return;
+        }
 
         Vector3 origin = _anchor.position;
         if ((origin - _oldAnchorPosition).sqrMagnitude > _teleportDistance * _teleportDistance ||
@@ -231,6 +268,11 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
         if (_mesh == null)
             return;
 
+        // Cache matrices/basis once instead of calling Transform.InverseTransformPoint
+        // four times for every vertex in every rendered frame.
+        Matrix4x4 worldToLocal = transform.worldToLocalMatrix;
+        Vector3 forward = _anchor.forward;
+        Vector3 right = _anchor.right;
         for (int i = 0; i <= _segments; i++)
         {
             Vector3 tangent;
@@ -241,24 +283,30 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
             else
                 tangent = (_positions[i + 1] - _positions[i - 1]).normalized;
 
-            Vector3 width = Vector3.Cross(tangent, _anchor.forward);
+            Vector3 width = Vector3.Cross(tangent, forward);
             if (width.sqrMagnitude < 0.0001f)
-                width = _anchor.right;
+                width = right;
             width.Normalize();
             Vector3 normal = Vector3.Cross(width, tangent).normalized;
 
             float halfWidth = _width * 0.5f * Mathf.Lerp(1f, 0.76f, i / (float)_segments);
             Vector3 center = _positions[i];
             int v = i * 4;
-            _vertices[v] = transform.InverseTransformPoint(center - width * halfWidth + normal * 0.001f);
-            _vertices[v + 1] = transform.InverseTransformPoint(center + width * halfWidth + normal * 0.001f);
-            _vertices[v + 2] = transform.InverseTransformPoint(center - width * halfWidth - normal * 0.001f);
-            _vertices[v + 3] = transform.InverseTransformPoint(center + width * halfWidth - normal * 0.001f);
+            _vertices[v] = worldToLocal.MultiplyPoint3x4(center - width * halfWidth + normal * 0.001f);
+            _vertices[v + 1] = worldToLocal.MultiplyPoint3x4(center + width * halfWidth + normal * 0.001f);
+            _vertices[v + 2] = worldToLocal.MultiplyPoint3x4(center - width * halfWidth - normal * 0.001f);
+            _vertices[v + 3] = worldToLocal.MultiplyPoint3x4(center + width * halfWidth - normal * 0.001f);
+            // World normals must be brought into object space. Our headwear
+            // hierarchy is uniformly scaled; inverse rotation is sufficient.
+            Vector3 localNormal = transform.InverseTransformDirection(normal).normalized;
+            _normals[v] = localNormal;
+            _normals[v + 1] = localNormal;
+            _normals[v + 2] = -localNormal;
+            _normals[v + 3] = -localNormal;
         }
 
-        _mesh.vertices = _vertices;
-        _mesh.RecalculateNormals();
-        _mesh.RecalculateBounds();
+        _mesh.SetVertices(_vertices, 0, _vertices.Length, FastUpdateFlags);
+        _mesh.SetNormals(_normals, 0, _normals.Length, FastUpdateFlags);
     }
 
     private void OnDestroy()
@@ -282,5 +330,6 @@ public sealed class HeadwearStrapDynamics : MonoBehaviour
         _length = Mathf.Max(0.03f, _length);
         _width = Mathf.Max(0.003f, _width);
         _maxStep = Mathf.Clamp(_maxStep, 0.005f, 0.03f);
+        _simulationDistance = Mathf.Max(2f, _simulationDistance);
     }
 }
