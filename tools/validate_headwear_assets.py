@@ -24,7 +24,9 @@ def check(condition: bool, message: str) -> None:
         ERR.append(message)
 
 
-def parse_obj(path: Path, min_faces: int) -> None:
+def parse_obj(path: Path, min_faces: int, *, min_groups: int = 5,
+              expected_materials: frozenset[str] = frozenset(
+                  {"TECH_FABRIC", "TECH_TRIM", "TECH_ACCENT"})) -> int:
     vertices = []
     texcoords = []
     face_count = 0
@@ -36,7 +38,7 @@ def parse_obj(path: Path, min_faces: int) -> None:
         lines = path.read_text(encoding="utf-8").splitlines()
     except OSError as exc:
         ERR.append(f"{path}: {exc}")
-        return
+        return 0
 
     for line_number, line in enumerate(lines, 1):
         fields = line.strip().split()
@@ -93,13 +95,14 @@ def parse_obj(path: Path, min_faces: int) -> None:
           f"{path}: expected at least {min_faces} faces, found {face_count}")
     check(len(texcoords) == len(vertices),
           f"{path}: expected one texture coordinate per vertex")
-    check(len(groups) >= 5, f"{path}: not enough mesh groups")
-    check(materials == {"TECH_FABRIC", "TECH_TRIM", "TECH_ACCENT"},
+    check(len(groups) >= min_groups, f"{path}: not enough mesh groups")
+    check(materials == expected_materials,
           f"{path}: unexpected material groups {materials}")
     check(all(material_faces.get(m, 0) > 0 for m in materials),
           f"{path}: empty material assignment")
     print(f"{path.relative_to(ROOT)}: {len(vertices)} verts, {face_count} triangles, "
           f"{len(groups)} groups, {len(materials)} materials")
+    return face_count
 
 
 def scene_audit() -> None:
@@ -208,8 +211,15 @@ def csharp_directive_audit() -> None:
 def main() -> int:
     csharp_directive_audit()
     png_texture_audit()
-    parse_obj(ART / "TechnicalCap.obj", 5000)
-    parse_obj(ART / "RaisedHood.obj", 2000)
+    cap = parse_obj(ART / "TechnicalCap.obj", 5000)
+    hood = parse_obj(ART / "RaisedHood.obj", 2000)
+    low_materials = frozenset({"TECH_FABRIC", "TECH_TRIM"})
+    cap_lod = parse_obj(ART / "TechnicalCap_LOD1.obj", 150,
+                        min_groups=2, expected_materials=low_materials)
+    hood_lod = parse_obj(ART / "RaisedHood_LOD1.obj", 100,
+                         min_groups=2, expected_materials=low_materials)
+    check(cap_lod <= cap * 0.5, "Cap LOD1 is not at least 50% cheaper")
+    check(hood_lod <= hood * 0.5, "Hood LOD1 is not at least 50% cheaper")
     scene_audit()
     metadata_audit()
     if ERR:
