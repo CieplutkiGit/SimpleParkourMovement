@@ -102,13 +102,14 @@ public static class HeadwearAssetBaker
                     Material[] materials = renderer.sharedMaterials;
                     for (int i = 0; i < materials.Length; i++)
                     {
-                        string key = materials[i] != null ? materials[i].name.ToUpperInvariant() :
-                            renderer.gameObject.name.ToUpperInvariant();
-                        if (key.Contains("ACCENT") || key.Contains("STITCH") || key.Contains("MARK"))
+                        string key = (materials[i] != null ? materials[i].name : "") +
+                                     "_" + renderer.gameObject.name;
+                        key = key.ToUpperInvariant();
+                        if (key.Contains("ACCENT") || key.Contains("STITCH") || key.Contains("MARK") || key.Contains("DART"))
                             materials[i] = accent;
                         else if (key.Contains("TRIM") || key.Contains("BRIM") ||
                                  key.Contains("BAND") || key.Contains("EYELET") ||
-                                 key.Contains("SEAM") || key.Contains("BUTTON") ||
+                                 key.Contains("SEAM") || key.Contains("INNER") || key.Contains("BUTTON") ||
                                  key.Contains("BACK_ADJUSTER"))
                             materials[i] = trim;
                         else
