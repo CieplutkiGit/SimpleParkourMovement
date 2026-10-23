@@ -113,6 +113,15 @@ public static class ProceduralHeadwearMeshes
             new Vector3(0f, -0.023f, -0.208f),
             new Vector3(0.055f, -0.014f, -0.188f)
         }, 0.007f, accent, ownedMeshes);
+
+        // Button closes the crown apex and gives the seams an intentional endpoint.
+        Vector3[] buttonLoop = new Vector3[CrownSides + 1];
+        for (int i = 0; i <= CrownSides; i++)
+        {
+            float a = i * Mathf.PI * 2f / CrownSides;
+            buttonLoop[i] = new Vector3(Mathf.Cos(a) * 0.012f, 0.211f, Mathf.Sin(a) * 0.012f);
+        }
+        BuildPipe(root, "Top crown button", buttonLoop, 0.004f, accent, ownedMeshes);
     }
 
     private static void BuildCrown(Transform root, Ring[] rings, Material material, List<Mesh> meshes)
@@ -137,6 +146,15 @@ public static class ProceduralHeadwearMeshes
         {
             int a = r * stride + s;
             g.Quad(a, a + stride, a + 1, a + stride + 1);
+        }
+
+        int apex = g.Vertex(new Vector3(0f, 0.210f, 0f), new Vector2(0.5f, 1f));
+        int topRing = (rings.Length - 1) * stride;
+        for (int s = 0; s < CrownSides; s++)
+        {
+            g.triangles.Add(topRing + s);
+            g.triangles.Add(apex);
+            g.triangles.Add(topRing + s + 1);
         }
 
         AddPart(root, "Six-panel crown", g, material, meshes);
