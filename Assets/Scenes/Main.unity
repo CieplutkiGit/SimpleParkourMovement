@@ -8669,6 +8669,8 @@ MonoBehaviour:
   _fabric: {fileID: 0}
   _trim: {fileID: 0}
   _accent: {fileID: 0}
+  _simulateAdjustmentTail: 1
+  _wind: {fileID: 11400000, guid: 5f4394de931fe5e43885d29525cb922f, type: 2}
   _allowHKeyCycle: 1
 
 --- !u!1660057539 &9223372036854775807
