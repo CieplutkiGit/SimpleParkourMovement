@@ -1,0 +1,30 @@
+name: Headwear source integrity
+on:
+  push:
+    branches:
+      - feature/aaa-headwear-prototype
+    paths:
+      - 'Assets/Art/Headwear/**'
+      - 'Assets/Scenes/Main.unity'
+      - 'Assets/Scripts/Character/Animation/Headwear*.cs*'
+      - 'Assets/Settings/Wind.asset.meta'
+      - 'tools/validate_headwear_assets.py'
+      - '.github/workflows/headwear-integrity.yml'
+  pull_request:
+    paths:
+      - 'Assets/Art/Headwear/**'
+      - 'Assets/Scenes/Main.unity'
+      - 'Assets/Scripts/Character/Animation/Headwear*.cs*'
+      - 'tools/validate_headwear_assets.py'
+      - '.github/workflows/headwear-integrity.yml'
+  workflow_dispatch:
+
+jobs:
+  source-integrity:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit headwear OBJ meshes and Unity scene references
+        run: python3 tools/validate_headwear_assets.py
