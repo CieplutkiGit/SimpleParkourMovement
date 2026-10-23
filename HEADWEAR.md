@@ -40,6 +40,68 @@ Scene: `Assets/Scenes/Main.unity`
 6. Switch back to the scarf after several seconds of motion. It should re-seed
    rather than lurch from stale spring positions.
 
+## Editable source assets and baked render assets
+
+These are **real committed source models**, not only runtime C# procedural
+meshes:
+
+- `Assets/Art/Headwear/Source/TechnicalCap.obj` — 3,443 vertices, 6,028
+  triangles, crown, dimensional curved bill, band, seams, ventilation eyelets,
+  brim stitching and adjustment details
+- `Assets/Art/Headwear/Source/RaisedHood.obj` — 1,464 vertices, 2,450
+  triangles, outer shell, lining, rolled face rim, structural seams
+- `Assets/Art/Headwear/Source/HeadwearMaterials.mtl` — simple placeholder
+  OBJ preview colors (not final PBR authoring)
+
+Source meshes were checked for invalid face indices and degenerate triangles.
+They can be imported into Blender for artist retopology/UV work; their current
+shape is algorithmically authored and not yet a professionally sculpted hero
+asset. The hood OBJ is **not** weight painted.
+
+**One-click Unity bake/assignment:** Open `Main.unity` in Unity 6, then use
+`Tools > Parkour > Build and Assign Headwear to Open Scene`. This tool:
+
+1. Imports the OBJ models as editable source and creates persistent native
+   mesh assets in `Assets/Art/Headwear/Baked`.
+2. Generates 512x512 weave albedo and normal maps with repeat/mipmaps.
+3. Creates three URP Lit materials (fabric, rubberized trim, accent) and
+   assigns them by OBJ material and mesh-group names.
+4. Creates cap/hood prefabs with full-detail LOD0 and a simplified LOD1
+   that excludes most seams, eyelets and small details.
+5. Assigns the prefabs and materials to the selected scene's Player
+   `HeadwearController`. **Save the scene** afterward to persist references.
+
+The bake can be repeated without intentionally changing existing mesh/material
+asset GUIDs. When OBJ geometry is imported as a single combined mesh, a fallback
+LOD preserves visibility; actual triangle reduction requires splitting the
+source into distinct parts. All generated textures/materials are in the baked
+folder, not source control until an artist chooses to commit them.
+
+For non-Unity inspection, you can run:
+`python3 tools/validate_headwear_assets.py`
+The GitHub Actions `headwear-integrity.yml` workflow also runs these
+source/scene checks. Passing this static check does **not** establish that
+Unity compiles or that the model looks correct on the character.
+
+**Fit:** Cap and rigid hood offsets/eulers are interpreted in Animator
+model-root space on spawn and then parented to the live head bone. This avoids
+assuming Mixamo's head bone local axes match the character's forward axis.
+If the Y Bot's imported forward axis differs, tune Cap/Hood Euler in Inspector.
+
+## AAA acceptance criteria (must be checked in a real engine session)
+
+- [ ] Unity 6 import succeeds with no C# compile errors and no broken references
+- [ ] Baked cap/hood have no pink materials, inverted faces or lighting artifacts
+- [ ] Cap pivots face forward and track every head motion
+- [ ] No visible clipping in sprint, wall-run, vault, ledge hang and climb-up
+- [ ] Cap crown/brim are stable; the rear strap moves cleanly, resets on teleports
+- [ ] Fabric grain, seams and roughness remain believable at close camera ranges
+- [ ] Stable framerate with appropriate headwear LODs in the target scene
+- [ ] Model, UVs, textures and corrective rigging reviewed by an artist
+
+Until those checks pass, describe this as an advanced headwear implementation
+and art-pipeline base, **not a shipping AAA garment**.
+
 ## How to replace prototype art with an actual high-end cap
 
 A *cap* should not behave as loose cloth. Rig the rigid cap (crown + reinforced
