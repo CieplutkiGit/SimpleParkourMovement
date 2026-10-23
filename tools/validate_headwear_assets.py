@@ -7,6 +7,8 @@ from __future__ import annotations
 import math
 import re
 import sys
+import struct
+import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -134,6 +136,52 @@ def metadata_audit() -> None:
     print(f"Unity metadata: {len(guids)} unique GUIDs")
 
 
+def png_texture_audit() -> None:
+    folder = ART / "Textures"
+    expected = (
+        "Fabric_Weave_Albedo.png",
+        "Fabric_Weave_Normal.png",
+        "Fabric_Weave_Occlusion.png",
+    )
+    for name in expected:
+        path = folder / name
+        try:
+            data = path.read_bytes()
+            check(data[:8] == b"\x89PNG\r\n\x1a\n",
+                  f"{path}: invalid PNG signature")
+            offset = 8
+            image_data = bytearray()
+            width = height = 0
+            while offset + 12 <= len(data):
+                length = struct.unpack(">I", data[offset:offset + 4])[0]
+                tag = data[offset + 4:offset + 8]
+                payload = data[offset + 8:offset + 8 + length]
+                checksum = struct.unpack(">I", data[offset + 8 + length:offset + 12 + length])[0]
+                check((zlib.crc32(tag + payload) & 0xffffffff) == checksum,
+                      f"{path}: CRC mismatch in {tag!r}")
+                if tag == b"IHDR":
+                    width, height, bitdepth, colortype = struct.unpack(">IIBB", payload[:10])
+                    check((width, height, bitdepth, colortype) == (256, 256, 8, 6),
+                          f"{path}: unexpected dimensions / encoding")
+                elif tag == b"IDAT":
+                    image_data.extend(payload)
+                elif tag == b"IEND":
+                    break
+                offset += length + 12
+
+            pixels = zlib.decompress(image_data)
+            check(len(pixels) == height * (1 + width * 4),
+                  f"{path}: invalid decompressed size")
+            for y in range(height):
+                check(pixels[y * (1 + width * 4)] == 0,
+                      f"{path}: unsupported scanline PNG filter")
+            check(len(set(pixels[1:300:4])) > 8,
+                  f"{path}: map appears blank or constant")
+            print(f"{path.relative_to(ROOT)}: {width}x{height}, CRC and pixel data OK")
+        except (OSError, ValueError, IndexError, struct.error, zlib.error) as exc:
+            ERR.append(f"{path}: {exc}")
+
+
 def csharp_directive_audit() -> None:
     source_dirs = [
         ROOT / "Assets/Scripts/Character/Animation",
@@ -159,6 +207,7 @@ def csharp_directive_audit() -> None:
 
 def main() -> int:
     csharp_directive_audit()
+    png_texture_audit()
     parse_obj(ART / "TechnicalCap.obj", 5000)
     parse_obj(ART / "RaisedHood.obj", 2000)
     scene_audit()
