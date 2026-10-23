@@ -6,7 +6,7 @@ on:
     paths:
       - 'Assets/Art/Headwear/**'
       - 'Assets/Scenes/Main.unity'
-      - 'Assets/Scripts/Character/Animation/Headwear*.cs*'
+      - 'Assets/Scripts/Character/Animation/*.cs*'
       - 'Assets/Editor/Headwear*.cs*'
       - 'Assets/Scripts/Environment/WindWake.cs'
       - 'Assets/Settings/Wind.asset.meta'
@@ -16,7 +16,7 @@ on:
     paths:
       - 'Assets/Art/Headwear/**'
       - 'Assets/Scenes/Main.unity'
-      - 'Assets/Scripts/Character/Animation/Headwear*.cs*'
+      - 'Assets/Scripts/Character/Animation/*.cs*'
       - 'Assets/Editor/Headwear*.cs*'
       - 'Assets/Scripts/Environment/WindWake.cs'
       - 'tools/validate_headwear_assets.py'
