@@ -6,6 +6,7 @@ using UnityEngine;
 /// substeps motion, constrains segment lengths and resolves a head sphere.
 /// </summary>
 [DisallowMultipleComponent]
+[DefaultExecutionOrder(150)]
 public sealed class HeadwearStrapDynamics : MonoBehaviour
 {
     [Header("Shape")]
