@@ -176,8 +176,49 @@ public static class HeadwearAssetBaker
                 }
             }
 
-            // If the OBJ importer merges every group into one renderer, preserve
-            // the geometry rather than making the distant cap invisible.
+            // Dedicated low-poly source models guarantee true triangle reduction
+            // even when the importer has merged all full-resolution OBJ groups.
+            GameObject lowSource = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/Art/Headwear/Source/" + name + "_LOD1.obj");
+            if (lowSource != null)
+            {
+                for (int i = 0; i < lod1.Length; i++)
+                    lod1[i].Clear();
+
+                GameObject low = UnityEngine.Object.Instantiate(lowSource, root.transform, false);
+                low.name = name + "_LOD1_Source";
+                foreach (MeshRenderer renderer in low.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    MeshFilter filter = renderer.GetComponent<MeshFilter>();
+                    if (filter == null || filter.sharedMesh == null)
+                        throw new InvalidOperationException("LOD1 OBJ source is missing a MeshFilter.");
+                    Material[] slots = renderer.sharedMaterials;
+                    for (int submesh = 0; submesh < filter.sharedMesh.subMeshCount; submesh++)
+                    {
+                        if (submesh >= slots.Length)
+                            throw new InvalidOperationException("LOD1 source has a missing material slot.");
+                        string key = ((slots[submesh] != null ? slots[submesh].name : "") +
+                                      "_" + renderer.gameObject.name).ToUpperInvariant();
+                        int bucket = key.Contains("TRIM") || key.Contains("BRIM") ||
+                                     key.Contains("LINING") ? 1 :
+                                     key.Contains("ACCENT") ? 2 : 0;
+                        lod1[bucket].Add(new CombineInstance
+                        {
+                            mesh = filter.sharedMesh,
+                            subMeshIndex = submesh,
+                            transform = root.transform.worldToLocalMatrix * filter.transform.localToWorldMatrix
+                        });
+                    }
+                }
+                hasSelectedFarParts = false;
+                for (int i = 0; i < lod1.Length; i++)
+                    hasSelectedFarParts |= lod1[i].Count > 0;
+                if (!hasSelectedFarParts)
+                    throw new InvalidOperationException("Low-poly LOD1 imported without any geometry.");
+            }
+
+            // If no dedicated low-poly asset exists and Unity merged everything,
+            // preserve silhouette visibility instead of hiding the entire cap.
             if (!hasSelectedFarParts)
             {
                 for (int i = 0; i < palette.Length; i++)
