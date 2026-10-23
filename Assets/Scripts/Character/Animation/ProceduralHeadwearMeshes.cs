@@ -122,6 +122,47 @@ public static class ProceduralHeadwearMeshes
             buttonLoop[i] = new Vector3(Mathf.Cos(a) * 0.012f, 0.211f, Mathf.Sin(a) * 0.012f);
         }
         BuildPipe(root, "Top crown button", buttonLoop, 0.004f, accent, ownedMeshes);
+
+        // Tiny geometric ventilation eyelets at the sides/back. Real modeled
+        // circles cast believable specular highlights unlike flat paint spots.
+        float[] eyeletAngles = { 43f, 137f, 223f, 317f };
+        for (int eyelet = 0; eyelet < eyeletAngles.Length; eyelet++)
+        {
+            float angle = eyeletAngles[eyelet] * DegToRad;
+            Ring ring = crown[2];
+            Vector3 normal = new Vector3(Mathf.Cos(angle) / 0.182f,
+                                         0.2f,
+                                         Mathf.Sin(angle) / 0.194f).normalized;
+            Vector3 center = new Vector3(Mathf.Cos(angle) * ring.width * 0.184f,
+                                         ring.y,
+                                         Mathf.Sin(angle) * ring.depth * 0.196f);
+            Vector3 axisA = Vector3.Cross(Vector3.up, normal).normalized;
+            Vector3 axisB = Vector3.Cross(normal, axisA).normalized;
+            Vector3[] circle = new Vector3[17];
+            for (int i = 0; i < circle.Length; i++)
+            {
+                float theta = (float)i / (circle.Length - 1) * Mathf.PI * 2f;
+                circle[i] = center + normal * 0.002f +
+                    (axisA * Mathf.Cos(theta) + axisB * Mathf.Sin(theta)) * 0.009f;
+            }
+            BuildPipe(root, "Metal ventilation eyelet " + eyelet, circle, 0.002f, trim, ownedMeshes);
+        }
+
+        // Actual brim stitch runs, laid onto the curved top surface.
+        for (int lane = 0; lane < 2; lane++)
+        {
+            float t = lane == 0 ? 0.77f : 0.92f;
+            Vector3[] seamLine = new Vector3[25];
+            for (int i = 0; i < seamLine.Length; i++)
+            {
+                float u = (float)i / (seamLine.Length - 1) * 2f - 1f;
+                float z = Mathf.Lerp(0.12f, 0.39f, t) - 0.065f * u * u * t;
+                float halfWidth = (0.145f + 0.047f * Mathf.Sin(t * Mathf.PI)) * (1f - 0.11f * t);
+                float y = 0.008f - 0.048f * t + 0.036f * u * u * t + 0.003f;
+                seamLine[i] = new Vector3(u * halfWidth * 0.96f, y, z);
+            }
+            BuildPipe(root, "Brim reinforcement stitch " + lane, seamLine, 0.0013f, accent, ownedMeshes);
+        }
     }
 
     private static void BuildCrown(Transform root, Ring[] rings, Material material, List<Mesh> meshes)
