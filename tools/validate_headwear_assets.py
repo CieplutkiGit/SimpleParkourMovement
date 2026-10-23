@@ -134,7 +134,31 @@ def metadata_audit() -> None:
     print(f"Unity metadata: {len(guids)} unique GUIDs")
 
 
+def csharp_directive_audit() -> None:
+    source_dirs = [
+        ROOT / "Assets/Scripts/Character/Animation",
+        ROOT / "Assets/Editor",
+    ]
+    count = 0
+    for folder in source_dirs:
+        for path in folder.glob("*.cs"):
+            depth = 0
+            for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                token = line.strip()
+                if token.startswith("#if "):
+                    depth += 1
+                elif token == "#endif":
+                    depth -= 1
+                    check(depth >= 0, f"{path}:{line_no}: unmatched #endif")
+                elif token.startswith("#else") or token.startswith("#elif "):
+                    check(depth > 0, f"{path}:{line_no}: {token} without #if")
+            check(depth == 0, f"{path}: unterminated #if")
+            count += 1
+    print(f"C# source guards: {count} files have balanced preprocessor directives")
+
+
 def main() -> int:
+    csharp_directive_audit()
     parse_obj(ART / "TechnicalCap.obj", 5000)
     parse_obj(ART / "RaisedHood.obj", 2000)
     scene_audit()
