@@ -173,7 +173,11 @@ public sealed class HeadwearController : MonoBehaviour
         if (_scarfRenderer != null)
             _scarfRenderer.enabled = useScarf && _scarfWasVisible;
         if (_scarfMotion != null)
+        {
+            if (useScarf && _scarfMotionWasEnabled && !_scarfMotion.enabled)
+                _scarfMotion.ResetSimulation();
             _scarfMotion.enabled = useScarf && _scarfMotionWasEnabled;
+        }
     }
 
     private void Update()
