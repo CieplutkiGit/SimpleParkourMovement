@@ -92,6 +92,12 @@ public static class HeadwearMeshValidation
                     continue;
                 }
 
+                if (m.bounds.size.sqrMagnitude < 1e-8f)
+                {
+                    Debug.LogError("Headwear validation: empty or collapsed bounds on " + m.name);
+                    valid = false;
+                }
+
                 Vector3[] vertices = m.vertices;
                 Vector3[] normals = m.normals;
                 Vector2[] uvs = m.uv;
