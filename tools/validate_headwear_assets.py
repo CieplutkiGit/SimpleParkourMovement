@@ -208,7 +208,35 @@ def csharp_directive_audit() -> None:
     print(f"C# source guards: {count} files have balanced preprocessor directives")
 
 
+def performance_source_audit() -> None:
+    animation = ROOT / "Assets/Scripts/Character/Animation"
+    strap = (animation / "HeadwearStrapDynamics.cs").read_text(encoding="utf-8")
+    fallback = (animation / "ProceduralHeadwearMeshes.cs").read_text(encoding="utf-8")
+    scarf = (animation / "SpringChain.cs").read_text(encoding="utf-8")
+    baker = (ROOT / "Assets/Editor/HeadwearAssetBaker.cs").read_text(encoding="utf-8")
+    binder = (animation / "HeadwearSkinnedGarmentBinding.cs").read_text(encoding="utf-8")
+
+    check("_mesh.RecalculateNormals()" not in strap,
+          "Dynamic strap is recalculating all mesh normals at runtime")
+    check("_mesh.RecalculateBounds()" not in strap,
+          "Dynamic strap is rebuilding mesh bounds per frame")
+    check("SetVertices(_vertices" in strap and "SetNormals(_normals" in strap,
+          "Dynamic strap isn't streaming reusable mesh arrays")
+    check("if (cull)" in strap and "_simulationDistance" in strap,
+          "Dynamic strap no longer skips distant simulation")
+    check("BatchStaticParts" in fallback and "ownedMeshes.Remove(original)" in fallback,
+          "Fallback headwear is retaining many draw calls/source meshes")
+    check("BakeBatches(" in baker and "mesh.CombineMeshes" in baker and '"_LOD1.obj"' in baker,
+          "Baker is not combining by material or using dedicated LOD1")
+    check("Mathf.Min(Time.deltaTime, 0.05f)" in scarf,
+          "Scarf simulation catch-up is unbounded")
+    check("_updateWhenOffscreen = false" in binder,
+          "Skinned garments have unconditional offscreen updates")
+    print("Headwear performance source guards OK (not an FPS benchmark)")
+
+
 def main() -> int:
+    performance_source_audit()
     csharp_directive_audit()
     png_texture_audit()
     cap = parse_obj(ART / "TechnicalCap.obj", 5000)
